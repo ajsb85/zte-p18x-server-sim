@@ -8,8 +8,8 @@ function getRandomInt(min, max) {
 }
 
 // Helper function to Base64 encode a string (UTF-8)
-// This function is EXPORTED at the bottom of the file.
-function toBase64(str) {
+export function toBase64(str) {
+  // EXPORTED
   try {
     return btoa(unescape(encodeURIComponent(str)));
   } catch (_e) {
@@ -405,14 +405,14 @@ function updateDynamicData() {
   }
 }
 
-function startDynamicDataUpdates() {
+export function startDynamicDataUpdates() {
   if (mockState.dynamicDataIntervalId === null) {
     mockState.dynamicDataIntervalId = setInterval(updateDynamicData, 2000);
     console.log('Dynamic data updates started.');
   }
 }
 
-function stopDynamicDataUpdates() {
+export function stopDynamicDataUpdates() {
   if (mockState.dynamicDataIntervalId !== null) {
     clearInterval(mockState.dynamicDataIntervalId);
     mockState.dynamicDataIntervalId = null;
@@ -420,191 +420,189 @@ function stopDynamicDataUpdates() {
   }
 }
 
-startDynamicDataUpdates(); // Start updates when the module is loaded
+startDynamicDataUpdates();
 
-module.exports = {
-  getState: (key) => mockState[key],
-  getAllStates: (keys) => {
-    const result = {};
-    keys.forEach((key) => {
-      // Use Object.prototype.hasOwnProperty.call to avoid linting error
-      if (
-        Object.prototype.hasOwnProperty.call(mockState, key) &&
-        key !== 'dynamicDataIntervalId'
-      ) {
-        result[key] = mockState[key];
-      }
-    });
-    return result;
-  },
-  setState: (key, value) => {
-    mockState[key] = value;
-    console.log(`Set mockState[${key}] = ${JSON.stringify(value)}`);
-    return true;
-  },
-  addSms: (smsData) => {
-    mockState.sms_id_counter += 1;
-    const newSms = {
-      id: mockState.sms_id_counter.toString(),
-      number: smsData.Number,
-      content: smsData.MessageBody,
-      date: smsData.sms_time.replace(/;/g, ','),
-      tag: smsData.tag || '2',
-      draft_group_id: smsData.draft_group_id || '',
-    };
-    mockState.sms_messages.push(newSms);
-    if (newSms.tag === '2') {
-      mockState.sms_capacity_info.sms_nv_send_total = (
-        parseInt(mockState.sms_capacity_info.sms_nv_send_total) + 1
-      ).toString();
-    } else if (newSms.tag === '1') {
-      mockState.sms_capacity_info.sms_nv_rev_total = (
-        parseInt(mockState.sms_capacity_info.sms_nv_rev_total) + 1
-      ).toString();
-      mockState.sms_unread_num = (
-        parseInt(mockState.sms_unread_num) + 1
-      ).toString();
-      mockState.sms_received_flag = '1';
-    }
+export const getState = (key) => mockState[key];
+
+export const getAllStates = (keys) => {
+  const result = {};
+  keys.forEach((key) => {
     if (
-      newSms.tag === '2' &&
-      mockState.sms_parameter_info.sms_para_status_report === '1'
+      Object.prototype.hasOwnProperty.call(mockState, key) &&
+      key !== 'dynamicDataIntervalId'
     ) {
-      setTimeout(
-        () => {
-          mockState.sms_id_counter += 1;
-          const reportSms = {
-            id: mockState.sms_id_counter.toString(),
-            number: newSms.number,
-            content: toBase64(
-              `Delivery Report: Message to ${newSms.number} successfully delivered.`
-            ),
-            date:
-              new Date()
-                .toLocaleDateString('en-CA', {
-                  year: '2-digit',
-                  month: '2-digit',
-                  day: '2-digit',
-                })
-                .replace(/-/g, ',') +
-              ',' +
-              new Date().toLocaleTimeString('en-GB').replace(/:/g, ','),
-            tag: '5',
-            draft_group_id: newSms.id,
-          };
-          mockState.sms_messages.push(reportSms);
-          mockState.sts_received_flag = '1';
-          console.log('Simulated delivery report:', reportSms.content);
-        },
-        getRandomInt(2000, 7000)
-      );
+      result[key] = mockState[key];
     }
-    return newSms;
-  },
-  deleteSms: (ids) => {
-    const initialCount = mockState.sms_messages.length;
-    let deletedNvRev = 0;
-    let deletedNvSend = 0;
-    mockState.sms_messages = mockState.sms_messages.filter((sms) => {
-      if (ids.includes(sms.id)) {
-        if (sms.tag === '0' || sms.tag === '1') {
-          deletedNvRev++;
-          if (sms.tag === '1')
-            mockState.sms_unread_num = (
-              parseInt(mockState.sms_unread_num) - 1
-            ).toString();
-        } else if (sms.tag === '2') {
-          deletedNvSend++;
-        }
-        return false;
+  });
+  return result;
+};
+
+export const setState = (key, value) => {
+  mockState[key] = value;
+  console.log(`Set mockState[${key}] = ${JSON.stringify(value)}`);
+  return true;
+};
+
+export const addSms = (smsData) => {
+  mockState.sms_id_counter += 1;
+  const newSms = {
+    id: mockState.sms_id_counter.toString(),
+    number: smsData.Number,
+    content: smsData.MessageBody,
+    date: smsData.sms_time.replace(/;/g, ','),
+    tag: smsData.tag || '2',
+    draft_group_id: smsData.draft_group_id || '',
+  };
+  mockState.sms_messages.push(newSms);
+  if (newSms.tag === '2') {
+    mockState.sms_capacity_info.sms_nv_send_total = (
+      parseInt(mockState.sms_capacity_info.sms_nv_send_total) + 1
+    ).toString();
+  } else if (newSms.tag === '1') {
+    mockState.sms_capacity_info.sms_nv_rev_total = (
+      parseInt(mockState.sms_capacity_info.sms_nv_rev_total) + 1
+    ).toString();
+    mockState.sms_unread_num = (
+      parseInt(mockState.sms_unread_num) + 1
+    ).toString();
+    mockState.sms_received_flag = '1';
+  }
+  if (
+    newSms.tag === '2' &&
+    mockState.sms_parameter_info.sms_para_status_report === '1'
+  ) {
+    setTimeout(
+      () => {
+        mockState.sms_id_counter += 1;
+        const reportSms = {
+          id: mockState.sms_id_counter.toString(),
+          number: newSms.number,
+          content: toBase64(
+            `Delivery Report: Message to ${newSms.number} successfully delivered.`
+          ),
+          date:
+            new Date()
+              .toLocaleDateString('en-CA', {
+                year: '2-digit',
+                month: '2-digit',
+                day: '2-digit',
+              })
+              .replace(/-/g, ',') +
+            ',' +
+            new Date().toLocaleTimeString('en-GB').replace(/:/g, ','),
+          tag: '5',
+          draft_group_id: newSms.id,
+        };
+        mockState.sms_messages.push(reportSms);
+        mockState.sts_received_flag = '1';
+        console.log('Simulated delivery report:', reportSms.content);
+      },
+      getRandomInt(2000, 7000)
+    );
+  }
+  return newSms;
+};
+
+export const deleteSms = (ids) => {
+  const initialCount = mockState.sms_messages.length;
+  let deletedNvRev = 0;
+  let deletedNvSend = 0;
+  mockState.sms_messages = mockState.sms_messages.filter((sms) => {
+    if (ids.includes(sms.id)) {
+      if (sms.tag === '0' || sms.tag === '1') {
+        deletedNvRev++;
+        if (sms.tag === '1')
+          mockState.sms_unread_num = (
+            parseInt(mockState.sms_unread_num) - 1
+          ).toString();
+      } else if (sms.tag === '2') {
+        deletedNvSend++;
       }
-      return true;
-    });
-    mockState.sms_capacity_info.sms_nv_rev_total = Math.max(
-      0,
-      parseInt(mockState.sms_capacity_info.sms_nv_rev_total) - deletedNvRev
-    ).toString();
-    mockState.sms_capacity_info.sms_nv_send_total = Math.max(
-      0,
-      parseInt(mockState.sms_capacity_info.sms_nv_send_total) - deletedNvSend
-    ).toString();
+      return false;
+    }
+    return true;
+  });
+  mockState.sms_capacity_info.sms_nv_rev_total = Math.max(
+    0,
+    parseInt(mockState.sms_capacity_info.sms_nv_rev_total) - deletedNvRev
+  ).toString();
+  mockState.sms_capacity_info.sms_nv_send_total = Math.max(
+    0,
+    parseInt(mockState.sms_capacity_info.sms_nv_send_total) - deletedNvSend
+  ).toString();
+  mockState.sms_unread_num = Math.max(
+    0,
+    parseInt(mockState.sms_unread_num)
+  ).toString();
+  if (parseInt(mockState.sms_unread_num) === 0)
+    mockState.sms_received_flag = '0';
+  return mockState.sms_messages.length < initialCount;
+};
+
+export const setSmsRead = (ids) => {
+  let readCount = 0;
+  mockState.sms_messages.forEach((sms) => {
+    if (ids.includes(sms.id) && sms.tag === '1') {
+      sms.tag = '0';
+      readCount++;
+    }
+  });
+  if (readCount > 0) {
     mockState.sms_unread_num = Math.max(
       0,
-      parseInt(mockState.sms_unread_num)
+      parseInt(mockState.sms_unread_num) - readCount
     ).toString();
     if (parseInt(mockState.sms_unread_num) === 0)
       mockState.sms_received_flag = '0';
-    return mockState.sms_messages.length < initialCount;
-  },
-  setSmsRead: (ids) => {
-    let readCount = 0;
-    mockState.sms_messages.forEach((sms) => {
-      if (ids.includes(sms.id) && sms.tag === '1') {
-        sms.tag = '0';
-        readCount++;
+  }
+  return true;
+};
+
+export const addPhonebookEntry = (entryData) => {
+  mockState.pbm_id_counter += 1;
+  const newEntry = {
+    pbm_id: mockState.pbm_id_counter.toString(),
+    pbm_location: entryData.location,
+    pbm_name: entryData.name,
+    pbm_number: entryData.mobilephone_num,
+    pbm_anr: entryData.homephone_num || '',
+    pbm_anr1: entryData.officephone_num || '',
+    pbm_group: entryData.groupchoose || 'Common',
+    pbm_email: entryData.email || '',
+  };
+  mockState.phonebook_entries.push(newEntry);
+  if (newEntry.pbm_location === '0') {
+    mockState.pbm_capacity_info.pbm_sim_used_record_num = (
+      parseInt(mockState.pbm_capacity_info.pbm_sim_used_record_num) + 1
+    ).toString();
+  } else {
+    mockState.pbm_capacity_info.pbm_dev_used_record_num = (
+      parseInt(mockState.pbm_capacity_info.pbm_dev_used_record_num) + 1
+    ).toString();
+  }
+  return newEntry;
+};
+
+export const deletePhonebookEntries = (ids) => {
+  const initialCount = mockState.phonebook_entries.length;
+  mockState.phonebook_entries = mockState.phonebook_entries.filter((entry) => {
+    if (ids.includes(entry.pbm_id)) {
+      if (entry.pbm_location === '0') {
+        mockState.pbm_capacity_info.pbm_sim_used_record_num = Math.max(
+          0,
+          parseInt(mockState.pbm_capacity_info.pbm_sim_used_record_num) - 1
+        ).toString();
+      } else {
+        mockState.pbm_capacity_info.pbm_dev_used_record_num = Math.max(
+          0,
+          parseInt(mockState.pbm_capacity_info.pbm_dev_used_record_num) - 1
+        ).toString();
       }
-    });
-    if (readCount > 0) {
-      mockState.sms_unread_num = Math.max(
-        0,
-        parseInt(mockState.sms_unread_num) - readCount
-      ).toString();
-      if (parseInt(mockState.sms_unread_num) === 0)
-        mockState.sms_received_flag = '0';
+      return false;
     }
     return true;
-  },
-  addPhonebookEntry: (entryData) => {
-    mockState.pbm_id_counter += 1;
-    const newEntry = {
-      pbm_id: mockState.pbm_id_counter.toString(),
-      pbm_location: entryData.location,
-      pbm_name: entryData.name,
-      pbm_number: entryData.mobilephone_num,
-      pbm_anr: entryData.homephone_num || '',
-      pbm_anr1: entryData.officephone_num || '',
-      pbm_group: entryData.groupchoose || 'Common',
-      pbm_email: entryData.email || '',
-    };
-    mockState.phonebook_entries.push(newEntry);
-    if (newEntry.pbm_location === '0') {
-      mockState.pbm_capacity_info.pbm_sim_used_record_num = (
-        parseInt(mockState.pbm_capacity_info.pbm_sim_used_record_num) + 1
-      ).toString();
-    } else {
-      mockState.pbm_capacity_info.pbm_dev_used_record_num = (
-        parseInt(mockState.pbm_capacity_info.pbm_dev_used_record_num) + 1
-      ).toString();
-    }
-    return newEntry;
-  },
-  deletePhonebookEntries: (ids) => {
-    const initialCount = mockState.phonebook_entries.length;
-    mockState.phonebook_entries = mockState.phonebook_entries.filter(
-      (entry) => {
-        if (ids.includes(entry.pbm_id)) {
-          if (entry.pbm_location === '0') {
-            mockState.pbm_capacity_info.pbm_sim_used_record_num = Math.max(
-              0,
-              parseInt(mockState.pbm_capacity_info.pbm_sim_used_record_num) - 1
-            ).toString();
-          } else {
-            mockState.pbm_capacity_info.pbm_dev_used_record_num = Math.max(
-              0,
-              parseInt(mockState.pbm_capacity_info.pbm_dev_used_record_num) - 1
-            ).toString();
-          }
-          return false;
-        }
-        return true;
-      }
-    );
-    return mockState.phonebook_entries.length < initialCount;
-  },
-
-  // Explicitly exported functions:
-  toBase64,
-  startDynamicDataUpdates,
-  stopDynamicDataUpdates,
-  mockState,
+  });
+  return mockState.phonebook_entries.length < initialCount;
 };
+
+export { mockState as _internalMockState };

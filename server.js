@@ -1,18 +1,19 @@
 // server.js
-const express = require('express');
-const bodyParser = require('body-parser');
-const morgan = require('morgan');
-const apiRoutes = require('./routes/api'); // Ensure this path is correct and api.js exports a router
+import express from 'express';
+import bodyParser from 'body-parser';
+import morgan from 'morgan';
+import apiRoutes from './routes/api.js';
+import * as mockData from './data/mockData.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(morgan('dev')); // HTTP request logger
-app.use(bodyParser.urlencoded({ extended: false })); // for application/x-www-form-urlencoded
-app.use(bodyParser.json()); // for application/json
+app.use(morgan('dev'));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-// CORS Middleware (allow all for simulation)
+// CORS Middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header(
@@ -26,15 +27,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// API Routes
-// This is the critical part for your /goform/... routes
-// It tells Express to use the router defined in routes/api.js for any requests to '/'
-// The paths within routes/api.js will be relative to this mount point.
 app.use('/', apiRoutes);
 
-// Special route for version file (as seen in wui.txt)
-// This route is defined directly on the app object.
-const mockData = require('./data/mockData');
 app.get('/zte_web/web/version', (req, res) => {
   const versionInfo = mockData.getState('version_info');
   if (
@@ -48,7 +42,6 @@ app.get('/zte_web/web/version', (req, res) => {
         `software_version=${versionInfo.software_version}\ninner_software_version=${versionInfo.inner_software_version}`
       );
   } else {
-    // This ensures a specific response if version_info is not found, rather than a generic 404 from this handler
     res
       .status(404)
       .type('text/plain')
@@ -56,15 +49,22 @@ app.get('/zte_web/web/version', (req, res) => {
   }
 });
 
-// Simple 404 error handler (if no routes above matched)
-app.use((req, res, next) => {
+// Simple 404 error handler
+app.use((req, res, _nextUnused) => {
+  // Renamed unused 'next'
   const error = new Error(`Not Found - ${req.method} ${req.originalUrl}`);
   error.status = 404;
-  next(error);
+  res.status(404).json({
+    error: {
+      message: error.message,
+      status: 404,
+    },
+  });
 });
 
-// General error handler (catches errors passed by next(error))
-app.use((error, req, res, next) => {
+// General error handler
+app.use((error, _reqUnused, res, _nextUnused) => {
+  // Renamed unused 'req' and 'next'
   res.status(error.status || 500);
   res.json({
     error: {
@@ -74,8 +74,14 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Start server only if this script is run directly (not required by a test runner)
-if (require.main === module) {
+import { fileURLToPath } from 'url';
+import { resolve } from 'path'; // Removed unused 'dirname'
+
+const __filename = fileURLToPath(import.meta.url);
+const isMainModule =
+  process.argv[1] === __filename || process.argv[1] === resolve(__filename);
+
+if (process.env.NODE_ENV !== 'test' && isMainModule) {
   app.listen(PORT, () => {
     console.log(`ZTE P18X API Simulator running on http://localhost:${PORT}`);
     console.log('Available API endpoints:');
@@ -84,9 +90,7 @@ if (require.main === module) {
       '  POST /goform/goform_set_cmd_process (with goformId in body)'
     );
     console.log('  GET  /zte_web/web/version');
-    // For debugging, you can log the routes Express knows about after setup
-    // console.log('Registered routes:', app._router.stack.filter(r => r.route).map(r => ({ path: r.route.path, methods: r.route.methods })));
   });
 }
 
-module.exports = app; // Export for testing
+export default app;

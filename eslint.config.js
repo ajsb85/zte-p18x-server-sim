@@ -4,7 +4,7 @@
 import globals from 'globals';
 import pluginJs from '@eslint/js';
 import pluginNode from 'eslint-plugin-node';
-import pluginPrettierRecommended from 'eslint-plugin-prettier/recommended'; // For Prettier integration
+import pluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 
 export default [
   {
@@ -21,7 +21,7 @@ export default [
       'deploy.sh',
       'run_postman_tests.sh',
       'eslint.config.js',
-      'jest.config.cjs', // Also ignore the Jest config file if it's cjs
+      'jest.config.cjs',
     ],
   },
   // Base configuration for all JavaScript files
@@ -42,13 +42,23 @@ export default [
       ...pluginNode.configs.recommended.rules,
       'node/no-unpublished-require': 'off',
       'node/no-missing-require': 'off',
-      'node/no-unsupported-features/es-syntax': 'off', // Disabled due to TypeError
-      'node/no-unsupported-features/es-builtins': 'off', // Disabled due to TypeError
-      'node/no-unsupported-features/node-builtins': 'off', // Disable for consistency and to preempt TypeErrors
-      'node/no-exports-assign': 'off', // Was causing errors with CJS files in ESM project
-      'node/no-deprecated-api': 'off', // Disabled due to TypeError
-      'node/no-extraneous-require': 'off', // Disabled due to TypeError
+      'node/no-unsupported-features/es-syntax': 'off',
+      'node/no-unsupported-features/es-builtins': 'off',
+      'node/no-unsupported-features/node-builtins': 'off',
+      'node/no-exports-assign': 'off',
+      'node/no-deprecated-api': 'off',
+      'node/no-extraneous-require': 'off',
       'no-console': 'off',
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrors: 'none', // Keep default or set to 'all' if you want to ignore all caught errors
+          caughtErrorsIgnorePattern: '^_', // Specifically ignore caught errors prefixed with _
+        },
+      ],
+      'no-prototype-builtins': 'off',
     },
   },
   // Configuration for test files
@@ -62,6 +72,11 @@ export default [
     rules: {
       'node/no-unpublished-require': 'off',
       'node/no-missing-require': 'off',
+      'node/no-unpublished-import': 'off',
+      'node/no-extraneous-import': [
+        'error',
+        { allowModules: ['@jest/globals', 'supertest'] },
+      ],
     },
   },
   pluginPrettierRecommended,

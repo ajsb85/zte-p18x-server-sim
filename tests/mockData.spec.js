@@ -1,4 +1,13 @@
-const mockDataModule = require('../data/mockData');
+import {
+  jest,
+  describe,
+  it,
+  expect,
+  afterAll,
+  beforeEach,
+  beforeAll,
+} from '@jest/globals';
+import * as mockDataModule from '../data/mockData.js';
 
 let initialMockStateSnapshot;
 
@@ -13,12 +22,15 @@ beforeAll(() => {
 
   try {
     initialMockStateSnapshot = JSON.parse(
-      JSON.stringify(mockDataModule.mockState)
+      JSON.stringify(
+        mockDataModule._internalMockState || mockDataModule.mockState
+      )
     );
-  } catch (error) {
+  } catch (_errorUnused) {
+    // Prefixed unused error variable
     console.error(
       'Error creating initialMockStateSnapshot in mockData.spec.js:',
-      error
+      _errorUnused
     );
     initialMockStateSnapshot = {};
   }
@@ -31,18 +43,24 @@ beforeEach(() => {
     );
     try {
       initialMockStateSnapshot = JSON.parse(
-        JSON.stringify(mockDataModule.mockState)
+        JSON.stringify(
+          mockDataModule._internalMockState || mockDataModule.mockState
+        )
       );
-    } catch (e) {
+    } catch (_eUnused) {
+      // Prefixed unused error variable
       initialMockStateSnapshot = {};
     }
   }
-  for (const key in mockDataModule.mockState) {
-    delete mockDataModule.mockState[key];
+  const targetMockState =
+    mockDataModule._internalMockState || mockDataModule.mockState;
+
+  for (const key in targetMockState) {
+    delete targetMockState[key];
   }
   for (const key in initialMockStateSnapshot) {
-    if (initialMockStateSnapshot.hasOwnProperty(key)) {
-      mockDataModule.mockState[key] = JSON.parse(
+    if (Object.prototype.hasOwnProperty.call(initialMockStateSnapshot, key)) {
+      targetMockState[key] = JSON.parse(
         JSON.stringify(initialMockStateSnapshot[key])
       );
     }
@@ -50,7 +68,6 @@ beforeEach(() => {
 });
 
 afterAll(() => {
-  // Stop any potentially restarted intervals, though beforeEach should handle state.
   if (typeof mockDataModule.stopDynamicDataUpdates === 'function') {
     mockDataModule.stopDynamicDataUpdates();
   }
@@ -93,18 +110,16 @@ describe('data/mockData.js', () => {
   });
 
   describe('SMS functions', () => {
-    // Use fake timers for this block because addSms schedules a setTimeout for delivery reports
     beforeEach(() => {
       jest.useFakeTimers();
     });
 
     afterEach(() => {
       if (jest.isMockFunction(setTimeout)) {
-        // Check if timers are still faked
-        jest.runAllTimers(); // Ensure all scheduled callbacks are executed
+        jest.runAllTimers();
       }
-      jest.clearAllTimers(); // Clear all faked timers
-      jest.useRealTimers(); // Restore real timers
+      jest.clearAllTimers();
+      jest.useRealTimers();
     });
 
     it('addSms should add an SMS and update counters for unread', () => {
@@ -120,11 +135,11 @@ describe('data/mockData.js', () => {
         sms_time: '25;01;01;00;00;00',
         tag: '1',
       });
-      jest.runAllTimers(); // Run timers for potential delivery report
+      jest.runAllTimers();
 
       expect(mockDataModule.getState('sms_messages').length).toBe(
         initialSmsCount + 1
-      ); // Base SMS
+      );
       expect(parseInt(mockDataModule.getState('sms_unread_num'))).toBe(
         initialUnread + 1
       );
@@ -143,7 +158,7 @@ describe('data/mockData.js', () => {
       mockDataModule.setState('sms_parameter_info', {
         ...mockDataModule.getState('sms_parameter_info'),
         sms_para_status_report: '1',
-      }); // Ensure delivery report is on for this test
+      });
 
       mockDataModule.addSms({
         Number: '67890',
@@ -155,15 +170,10 @@ describe('data/mockData.js', () => {
       expect(
         parseInt(mockDataModule.getState('sms_capacity_info').sms_nv_send_total)
       ).toBe(initialSent + 1);
-
-      // Check for initial SMS addition (before delivery report timeout)
       expect(mockDataModule.getState('sms_messages').length).toBe(
         initialSmsCount + 1
       );
-
-      jest.runAllTimers(); // Run timers to trigger delivery report
-
-      // Now check if delivery report was added
+      jest.runAllTimers();
       expect(mockDataModule.getState('sms_messages').length).toBe(
         initialSmsCount + 2
       );
@@ -177,7 +187,7 @@ describe('data/mockData.js', () => {
         sms_time: '25;01;01;00;00;00',
         tag: '1',
       });
-      jest.runAllTimers(); // Flush any delivery report from addSms
+      jest.runAllTimers();
       const initialSmsCount = mockDataModule.getState('sms_messages').length;
       const initialUnread = parseInt(mockDataModule.getState('sms_unread_num'));
 
@@ -198,7 +208,7 @@ describe('data/mockData.js', () => {
         sms_time: '25;01;01;00;00;00',
         tag: '1',
       });
-      jest.runAllTimers(); // Flush any delivery report
+      jest.runAllTimers();
       const initialUnread = parseInt(mockDataModule.getState('sms_unread_num'));
 
       mockDataModule.setSmsRead([addedSms.id]);
@@ -309,7 +319,6 @@ describe('data/mockData.js', () => {
   });
 
   describe('Dynamic Data Updates Interval', () => {
-    // This block will also use fake timers due to the setTimeout in updateDynamicData test
     beforeEach(() => {
       jest.useFakeTimers();
     });
@@ -320,7 +329,6 @@ describe('data/mockData.js', () => {
       }
       jest.clearAllTimers();
       jest.useRealTimers();
-      // Ensure the main interval is stopped if it was started by a test
       if (typeof mockDataModule.stopDynamicDataUpdates === 'function') {
         mockDataModule.stopDynamicDataUpdates();
       }
@@ -329,12 +337,16 @@ describe('data/mockData.js', () => {
     it('stopDynamicDataUpdates should clear the interval if running', () => {
       if (typeof mockDataModule.startDynamicDataUpdates === 'function') {
         mockDataModule.startDynamicDataUpdates();
-        expect(mockDataModule.mockState.dynamicDataIntervalId).not.toBeNull();
+        expect(
+          mockDataModule._internalMockState.dynamicDataIntervalId
+        ).not.toBeNull();
       }
 
       if (typeof mockDataModule.stopDynamicDataUpdates === 'function') {
         mockDataModule.stopDynamicDataUpdates();
-        expect(mockDataModule.mockState.dynamicDataIntervalId).toBeNull();
+        expect(
+          mockDataModule._internalMockState.dynamicDataIntervalId
+        ).toBeNull();
       }
     });
 
@@ -348,9 +360,7 @@ describe('data/mockData.js', () => {
       }
 
       mockDataModule.startDynamicDataUpdates();
-      const initialSignal = mockDataModule.getState('signalbar');
 
-      // Advance timers by more than the interval to ensure updateDynamicData runs
       jest.advanceTimersByTime(2100);
 
       const newSignal = mockDataModule.getState('signalbar');
@@ -359,6 +369,6 @@ describe('data/mockData.js', () => {
 
       mockDataModule.stopDynamicDataUpdates();
       done();
-    }, 5000); // Increased timeout for safety, though fake timers should make it fast
+    }, 5000);
   });
 });

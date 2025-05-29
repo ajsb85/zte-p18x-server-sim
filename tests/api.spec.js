@@ -1,6 +1,15 @@
-const request = require('supertest');
-const app = require('../server'); // Import the Express app
-const mockDataModule = require('../data/mockData');
+import {
+  jest,
+  describe,
+  it,
+  expect,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from '@jest/globals'; // Import Jest globals
+import request from 'supertest';
+import app from '../server.js';
+import * as mockDataModule from '../data/mockData.js';
 
 describe('ZTE P18X API Simulator', () => {
   afterAll(() => {
@@ -10,18 +19,14 @@ describe('ZTE P18X API Simulator', () => {
   });
 
   beforeEach(() => {
-    // Reset key states before each test for better isolation
     mockDataModule.setState('ppp_status', 'ppp_disconnected');
     mockDataModule.setState('loginfo', 'no');
     mockDataModule.setState('ussd_write_flag', '0');
     mockDataModule.setState('pbm_write_flag', '0');
-    // Reset sms_cmd_status_info to a neutral state
     mockDataModule.setState('sms_cmd_status_info', {
       sms_cmd: 0,
       sms_cmd_status_result: '0',
     });
-    // Consider resetting sms_messages or phonebook_entries if tests heavily modify them and require a pristine start.
-    // For now, tests that add items will also handle their cleanup or check counts.
   });
 
   describe('Basic Server and Routing Checks', () => {
@@ -134,16 +139,12 @@ describe('ZTE P18X API Simulator', () => {
   });
 
   describe('POST /goform/goform_set_cmd_process', () => {
-    // Use fake timers for tests in this describe block that involve setTimeout
     beforeEach(() => {
       jest.useFakeTimers();
     });
 
     afterEach(() => {
-      // Ensure all timers created within a test (and their callbacks) are flushed
-      // before clearing them and restoring real timers.
       if (jest.isMockFunction(setTimeout) || jest.isMockFunction(setInterval)) {
-        // Check if timers are still faked
         jest.runAllTimers();
       }
       jest.clearAllTimers();
@@ -185,7 +186,7 @@ describe('ZTE P18X API Simulator', () => {
         .send({
           goformId: 'SEND_SMS',
           Number: '+1234567890',
-          MessageBody: mockDataModule.toBase64('Hello test'), // Use exported toBase64
+          MessageBody: mockDataModule.toBase64('Hello test'),
           sms_time: '24;01;01;12;00;00',
           ID: '-1',
           encode_type: 'GSM7_default',
@@ -197,7 +198,7 @@ describe('ZTE P18X API Simulator', () => {
         sms_cmd_status_result: '1',
       });
 
-      jest.runAllTimers(); // Execute the setTimeout in SEND_SMS handler
+      jest.runAllTimers();
 
       const expectedNewMessages =
         mockDataModule.getState('sms_parameter_info').sms_para_status_report ===
@@ -214,10 +215,6 @@ describe('ZTE P18X API Simulator', () => {
     });
 
     it('should handle SET_MSG_READ command', async () => {
-      // Ensure there's an unread message to test with
-      const tempSmsId = (
-        mockDataModule.getState('sms_id_counter') + 1
-      ).toString();
       mockDataModule.addSms({
         Number: '999888777',
         MessageBody: mockDataModule.toBase64('Unread Test SMS'),
@@ -241,13 +238,10 @@ describe('ZTE P18X API Simulator', () => {
       const updatedSms = mockDataModule
         .getState('sms_messages')
         .find((m) => m.id === unreadSms.id);
-      expect(updatedSms.tag).toBe('0'); // Should now be read
+      expect(updatedSms.tag).toBe('0');
     });
 
     it('should handle DELETE_SMS command', async () => {
-      const tempSmsId = (
-        mockDataModule.getState('sms_id_counter') + 1
-      ).toString();
       mockDataModule.addSms({
         Number: '111222333',
         MessageBody: mockDataModule.toBase64('SMS to Delete'),
@@ -272,7 +266,7 @@ describe('ZTE P18X API Simulator', () => {
         sms_cmd_status_result: '1',
       });
 
-      jest.runAllTimers(); // Execute setTimeout in DELETE_SMS handler
+      jest.runAllTimers();
       expect(mockDataModule.getState('sms_messages').length).toBe(
         initialSmsCount - 1
       );
@@ -293,7 +287,7 @@ describe('ZTE P18X API Simulator', () => {
         .send({ goformId: 'CONNECT_NETWORK' });
       expect(response.body).toEqual({ result: 'success' });
       expect(mockDataModule.getState('ppp_status')).toBe('ppp_connecting');
-      jest.runAllTimers(); // For CONNECT_NETWORK setTimeout
+      jest.runAllTimers();
       expect(mockDataModule.getState('ppp_status')).toBe('ppp_connected');
 
       response = await request(app)
@@ -301,7 +295,7 @@ describe('ZTE P18X API Simulator', () => {
         .send({ goformId: 'DISCONNECT_NETWORK' });
       expect(response.body).toEqual({ result: 'success' });
       expect(mockDataModule.getState('ppp_status')).toBe('ppp_disconnecting');
-      jest.runAllTimers(); // For DISCONNECT_NETWORK setTimeout
+      jest.runAllTimers();
       expect(mockDataModule.getState('ppp_status')).toBe('ppp_disconnected');
     });
 
@@ -310,7 +304,7 @@ describe('ZTE P18X API Simulator', () => {
         mockDataModule.getState('phonebook_entries').length;
       const newContactNameBase64 = mockDataModule.toBase64(
         'Test Add Contact API'
-      ); // Use exported toBase64
+      );
       const response = await request(app)
         .post('/goform/goform_set_cmd_process')
         .send({
@@ -322,7 +316,7 @@ describe('ZTE P18X API Simulator', () => {
         });
       expect(response.body).toEqual({ result: 'success' });
       expect(mockDataModule.getState('pbm_write_flag')).toBe('1');
-      jest.runAllTimers(); // For PBM_CONTACT_ADD setTimeout
+      jest.runAllTimers();
       expect(mockDataModule.getState('pbm_write_flag')).toBe('0');
       expect(mockDataModule.getState('phonebook_entries').length).toBe(
         initialPbmCount + 1
@@ -337,8 +331,8 @@ describe('ZTE P18X API Simulator', () => {
     it('should handle PBM_CONTACT_DEL', async () => {
       const contactToDelNameBase64 = mockDataModule.toBase64(
         'Contact ToDelete API'
-      ); // Use exported toBase64
-      const addedEntry = mockDataModule.addPhonebookEntry({
+      );
+      mockDataModule.addPhonebookEntry({
         location: '1',
         name: contactToDelNameBase64,
         mobilephone_num: '111222333',
@@ -346,7 +340,7 @@ describe('ZTE P18X API Simulator', () => {
       const entryToDel = mockDataModule
         .getState('phonebook_entries')
         .find((c) => c.pbm_name === contactToDelNameBase64);
-      expect(entryToDel).toBeDefined(); // Ensure contact was added for test
+      expect(entryToDel).toBeDefined();
       const initialPbmCount =
         mockDataModule.getState('phonebook_entries').length;
 
@@ -355,7 +349,7 @@ describe('ZTE P18X API Simulator', () => {
         .send({ goformId: 'PBM_CONTACT_DEL', delete_id: entryToDel.pbm_id });
       expect(response.body).toEqual({ result: 'success' });
       expect(mockDataModule.getState('pbm_write_flag')).toBe('1');
-      jest.runAllTimers(); // For PBM_CONTACT_DEL setTimeout
+      jest.runAllTimers();
       expect(mockDataModule.getState('pbm_write_flag')).toBe('0');
       expect(mockDataModule.getState('phonebook_entries').length).toBe(
         initialPbmCount - 1
@@ -377,7 +371,7 @@ describe('ZTE P18X API Simulator', () => {
         });
       expect(response.body).toEqual({ result: 'success' });
       expect(mockDataModule.getState('ussd_write_flag')).toBe('15');
-      jest.runAllTimers(); // For USSD_PROCESS setTimeout
+      jest.runAllTimers();
       expect(mockDataModule.getState('ussd_write_flag')).toBe('16');
       expect(mockDataModule.getState('ussd_data_info').ussd_data).toBeDefined();
       expect(mockDataModule.getState('ussd_data_info').ussd_action).toBe('1');
