@@ -1309,7 +1309,7 @@ The UI typically aims to translate technical error codes or states into user-fri
 
   - `result`: (String) "success" if language applied.
 
-#### 5.13. Get Fast Boot Setting Response (JSON):\*\*
+#### 5.13. Get Fast Boot Setting Response (JSON):
 
     ```json
     {
@@ -1320,7 +1320,7 @@ The UI typically aims to translate technical error codes or states into user-fri
     **Response Field Descriptions:**
     * `fast_boot_enable`: (String) "0"(disabled), "1"(enabled).
 
-#### 5.14. Set Fast Boot Setting Response (JSON):\*\*
+#### 5.14. Set Fast Boot Setting Response (JSON):
 
     ```json
     {
@@ -1561,84 +1561,103 @@ The UI typically aims to translate technical error codes or states into user-fri
 
 ### 8. Firewall Management
 
-#### 8.1. Get Port Filter Settings Response Example (JSON):\*\*
+#### 8.1. Get Port Filter Settings Response Example (JSON):
 
-    ```json
+```json
+{
+  "filter_default_policy": "ACCEPT",
+  "filter_enable": "1",
+  "filter_rule_list": [
     {
-        "filter_default_policy": "ACCEPT",
-        "filter_enable": "1",
-        "filter_rule_list": [
-            {"src_ip":"192.168.0.10", "src_port":"any", "dst_ip":"any", "dst_port":"80", "protocol":"TCP", "action":"DROP", "comment":"BlockWebForPC1"}
-        ]
+      "src_ip": "192.168.0.10",
+      "src_port": "any",
+      "dst_ip": "any",
+      "dst_port": "80",
+      "protocol": "TCP",
+      "action": "DROP",
+      "comment": "BlockWebForPC1"
     }
-    ```
+  ]
+}
+```
 
-    **Response Field Descriptions:**
-    * `filter_default_policy`: (String) "ACCEPT" or "DROP".
-    * `filter_enable`: (String) "1"(enabled), "0"(disabled).
-    * `filter_rule_list`: (Array) List of rule objects.
-        * `src_ip`, `dst_ip`: (String) IP address or "any".
-        * `src_port`, `dst_port`: (String) Port or "any".
-        * `protocol`: (String) "TCP", "UDP", "BOTH", "ICMP".
-        * `action`: (String) "ACCEPT" or "DROP".
-        * `comment`: (String) Rule description.
+**Response Field Descriptions:**
 
-#### 8.5. Get Port Mapping (Virtual Server) Settings Response Example (JSON):\*\*
+- `filter_default_policy`: (String) "ACCEPT" or "DROP".
+- `filter_enable`: (String) "1"(enabled), "0"(disabled).
+- `filter_rule_list`: (Array) List of rule objects.
+  - `src_ip`, `dst_ip`: (String) IP address or "any".
+  - `src_port`, `dst_port`: (String) Port or "any".
+  - `protocol`: (String) "TCP", "UDP", "BOTH", "ICMP".
+  - `action`: (String) "ACCEPT" or "DROP".
+  - `comment`: (String) Rule description.
 
-    ```json
+#### 8.5. Get Port Mapping (Virtual Server) Settings Response Example (JSON):
+
+```json
+{
+  "port_map_enable": "1",
+  "port_map_rule_list": [
     {
-        "port_map_enable": "1",
-        "port_map_rule_list": [
-            {"wan_port_range":"8080", "lan_ip_addr":"192.168.0.100", "lan_port_range":"80", "protocol":"TCP", "description":"WebServer"}
-        ]
+      "wan_port_range": "8080",
+      "lan_ip_addr": "192.168.0.100",
+      "lan_port_range": "80",
+      "protocol": "TCP",
+      "description": "WebServer"
     }
-    ```
+  ]
+}
+```
 
-    **Response Field Descriptions:**
-    * `port_map_enable`: (String) "1"(enabled), "0"(disabled).
-    * `port_map_rule_list`: (Array) List of rule objects.
-        * `wan_port_range`: (String) External port/range.
-        * `lan_ip_addr`: (String) Internal IP.
-        * `lan_port_range`: (String) Internal port/range.
-        * `protocol`: (String) "TCP", "UDP", "BOTH".
-        * `description`: (String) Rule description.
+**Response Field Descriptions:**
 
-#### 8.8. Get DMZ Settings Response Example (JSON):\*\*
+- `port_map_enable`: (String) "1"(enabled), "0"(disabled).
+- `port_map_rule_list`: (Array) List of rule objects.
+  - `wan_port_range`: (String) External port/range.
+  - `lan_ip_addr`: (String) Internal IP.
+  - `lan_port_range`: (String) Internal port/range.
+  - `protocol`: (String) "TCP", "UDP", "BOTH".
+  - `description`: (String) Rule description.
 
-    ```json
-    {
-        "dmz_enable": "0",
-        "dmz_ip_addr": "192.168.0.150"
-    }
-    ```
+#### 8.8. Get DMZ Settings Response Example (JSON):
 
-    **Response Field Descriptions:**
-    * `dmz_enable`: (String) "0"(disabled), "1"(enabled).
-    * `dmz_ip_addr`: (String) LAN IP of DMZ host.
+```json
+{
+  "dmz_enable": "0",
+  "dmz_ip_addr": "192.168.0.150"
+}
+```
 
-#### 8.10. Get UPnP Settings Response Example (JSON):\*\*
+**Response Field Descriptions:**
 
-    ```json
-    {
-        "upnp_enable": "1"
-    }
-    ```
+- `dmz_enable`: (String) "0"(disabled), "1"(enabled).
+- `dmz_ip_addr`: (String) LAN IP of DMZ host.
 
-    **Response Field Descriptions:**
-    * `upnp_enable`: (String) "1"(enabled), "0"(disabled).
+#### 8.10. Get UPnP Settings Response Example (JSON):
 
-#### 8.12. Get System Security Settings Response Example (JSON):\*\*
+```json
+{
+  "upnp_enable": "1"
+}
+```
 
-    ```json
-    {
-        "remote_management_enable": "0",
-        "wan_ping_filter_enable": "1"
-    }
-    ```
+**Response Field Descriptions:**
 
-    **Response Field Descriptions:**
-    * `remote_management_enable`: (String) "0"(disabled), "1"(enabled).
-    * `wan_ping_filter_enable`: (String) "1"(ping blocked), "0"(ping allowed).
+- `upnp_enable`: (String) "1"(enabled), "0"(disabled).
+
+#### 8.12. Get System Security Settings Response Example (JSON):
+
+```json
+{
+  "remote_management_enable": "0",
+  "wan_ping_filter_enable": "1"
+}
+```
+
+**Response Field Descriptions:**
+
+- `remote_management_enable`: (String) "0"(disabled), "1"(enabled).
+- `wan_ping_filter_enable`: (String) "1"(ping blocked), "0"(ping allowed).
 
 ---
 
