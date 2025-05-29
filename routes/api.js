@@ -52,7 +52,6 @@ router.get('/goform/goform_get_cmd_process', (req, res) => {
       } else if (command === 'version_info') {
         responseData[command] = mockData.getState('version_info');
       }
-      // Add more known complex object keys here if needed
     }
   });
 
@@ -79,8 +78,6 @@ router.get('/goform/goform_get_cmd_process', (req, res) => {
 
 // POST /goform/goform_set_cmd_process
 router.post('/goform/goform_set_cmd_process', (req, res, next) => {
-  // Added next for error handling
-  // Safer logging for req.body
   if (req.body) {
     console.log(
       `POST /goform/goform_set_cmd_process received. Raw Body (first 100 chars):`,
@@ -94,8 +91,7 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
   console.log(`Request Content-Type: ${req.get('Content-Type')}`);
 
   try {
-    // Wrap the entire switch logic in a try...catch
-    const goformId = req.body ? req.body.goformId : undefined; // Check if req.body exists
+    const goformId = req.body ? req.body.goformId : undefined;
     if (!goformId) {
       console.error(
         'goformId is missing in POST request body or req.body is undefined. Full body:',
@@ -136,11 +132,13 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
             .status(400)
             .json({ result: 'failure', error: 'Missing fields for SEND_SMS' });
         }
+        res.json({ result: 'success' });
+
         mockData.setState('sms_cmd_status_info', {
           sms_cmd: 4,
-          sms_cmd_status_result: '1',
-        });
-        res.json({ result: 'success' });
+          sms_cmd_status_result: '3',
+        }); // Set to success immediately
+
         setTimeout(() => {
           try {
             const newSms = mockData.addSms({
@@ -148,24 +146,51 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
               MessageBody: req.body.MessageBody,
               sms_time: req.body.sms_time,
               draft_group_id: req.body.draft_group_id || '',
+              encode_type: req.body.encode_type,
             });
-            mockData.setState('sms_cmd_status_info', {
-              sms_cmd: 4,
-              sms_cmd_status_result: '3',
-            });
-            console.log(
-              'SEND_SMS processed asynchronously, new SMS ID:',
-              newSms.id
-            );
+            console.log('SEND_SMS added to mockData, new SMS ID:', newSms.id);
           } catch (error) {
-            console.error('Error processing SEND_SMS asynchronously:', error);
-            mockData.setState('sms_cmd_status_info', {
-              sms_cmd: 4,
-              sms_cmd_status_result: '4',
-            });
+            console.error(
+              'Error processing SEND_SMS (simulated async add):',
+              error
+            );
           }
-        }, 1500);
+        }, 10);
         return;
+      }
+      case 'SET_MESSAGE_CENTER': {
+        const newSmsParams = { ...mockData.getState('sms_parameter_info') };
+        if (req.body.MessageCenter !== undefined) {
+          newSmsParams.sms_para_sca = req.body.MessageCenter;
+        }
+        if (req.body.save_time !== undefined) {
+          const validityMap = {
+            default: '143', // Default, often 12 hours or device max
+            one_hour: '11',
+            six_hours: '71',
+            twelve_hours: '143',
+            one_day: '167',
+            one_week: '173',
+            largest_period: '255', // Max validity
+            largest: '255', // Alias for largest_period based on log
+          };
+          newSmsParams.sms_para_validity_period =
+            validityMap[req.body.save_time.toLowerCase()] ||
+            newSmsParams.sms_para_validity_period;
+        }
+        if (req.body.status_save !== undefined) {
+          // "0" or "1"
+          newSmsParams.sms_para_status_report = req.body.status_save;
+        }
+        if (req.body.save_location !== undefined) {
+          // "native" or "sim"
+          newSmsParams.sms_para_mem_store =
+            req.body.save_location === 'native' ? 'nv' : req.body.save_location;
+        }
+        mockData.setState('sms_parameter_info', newSmsParams);
+        console.log('Updated SMS Parameters:', newSmsParams);
+        responseData.result = 'success'; // Or "0" if the device expects that
+        break;
       }
       case 'SET_MSG_READ': {
         if (!req.body.msg_id) {
@@ -192,32 +217,23 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
         }
         const msg_ids_delete = req.body.msg_id.split(';').filter((id) => id);
         mockData.deleteSms(msg_ids_delete);
+        res.json({ result: 'success' });
         mockData.setState('sms_cmd_status_info', {
           sms_cmd: 6,
-          sms_cmd_status_result: '1',
+          sms_cmd_status_result: '3',
         });
-        res.json({ result: 'success' });
-        setTimeout(() => {
-          mockData.setState('sms_cmd_status_info', {
-            sms_cmd: 6,
-            sms_cmd_status_result: '3',
-          });
-        }, 500);
         return;
       }
       case 'CONNECT_NETWORK':
         mockData.setState('ppp_status', 'ppp_connecting');
-        setTimeout(
-          () => mockData.setState('ppp_status', 'ppp_connected'),
-          2000
-        );
+        setTimeout(() => mockData.setState('ppp_status', 'ppp_connected'), 50);
         responseData.result = 'success';
         break;
       case 'DISCONNECT_NETWORK':
         mockData.setState('ppp_status', 'ppp_disconnecting');
         setTimeout(
           () => mockData.setState('ppp_status', 'ppp_disconnected'),
-          1000
+          50
         );
         responseData.result = 'success';
         break;
@@ -243,10 +259,10 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
             });
         }
         mockData.addPhonebookEntry(req.body);
+        res.json({ result: 'success' });
         mockData.setState('pbm_write_flag', '1');
-        setTimeout(() => mockData.setState('pbm_write_flag', '0'), 1000);
-        responseData.result = 'success';
-        break;
+        setTimeout(() => mockData.setState('pbm_write_flag', '0'), 50);
+        return;
       case 'PBM_CONTACT_DEL': {
         if (!req.body.delete_id) {
           return res
@@ -258,10 +274,10 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
         }
         const ids_to_delete = req.body.delete_id.split(',').filter((id) => id);
         mockData.deletePhonebookEntries(ids_to_delete);
+        res.json({ result: 'success' });
         mockData.setState('pbm_write_flag', '1');
-        setTimeout(() => mockData.setState('pbm_write_flag', '0'), 1000);
-        responseData.result = 'success';
-        break;
+        setTimeout(() => mockData.setState('pbm_write_flag', '0'), 50);
+        return;
       }
       case 'USSD_PROCESS': {
         if (!req.body.USSD_operator) {
@@ -281,7 +297,6 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
             console.error(
               'USSD_PROCESS missing USSD_send_number or USSD_reply_number'
             );
-            // Note: response already sent, so this log is for server-side debugging
             return;
           }
           mockData.setState('ussd_write_flag', '15');
@@ -292,12 +307,11 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
               responseText +=
                 'Your balance is $10.50. Reply 1 for more options.';
             else responseText += 'Operation successful.';
-
             mockData.setState('ussd_data_info', {
-              ussd_data: mockData.toBase64(responseText),
+              ussd_data: responseText,
               ussd_action: command === '*123#' ? '0' : '1',
             });
-          }, 2000);
+          }, 50);
         } else if (ussdOperator === 'ussd_cancel') {
           mockData.setState('ussd_write_flag', '13');
           mockData.setState('ussd_data_info', {
@@ -308,7 +322,6 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
         return;
       }
       case 'SET_WIFI_SSID1_SETTINGS':
-        // Add checks for required fields if necessary
         mockData.setState('SSID1', req.body.ssid);
         mockData.setState('AuthMode', req.body.security_mode);
         mockData.setState(
@@ -324,7 +337,6 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
         break;
       default:
         console.warn(`Unhandled goformId in POST: ${goformId}`);
-        responseData.result = 'failure';
         return res
           .status(400)
           .json({
@@ -341,7 +353,7 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
       `Error in POST /goform/goform_set_cmd_process (goformId: ${req.body ? req.body.goformId : 'N/A'}):`,
       error.stack || error
     );
-    next(error); // Pass error to the general error handler in server.js
+    next(error);
   }
 });
 

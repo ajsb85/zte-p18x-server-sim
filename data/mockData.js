@@ -7,67 +7,51 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Helper function to Base64 encode a string (UTF-8)
-export function toBase64(str) {
-  try {
-    return btoa(unescape(encodeURIComponent(str)));
-  } catch (_e) {
-    if (typeof Buffer !== 'undefined') {
-      return Buffer.from(str, 'utf-8').toString('base64');
-    }
-    console.error('Base64 encoding failed: btoa and Buffer are undefined.');
-    return str;
-  }
-}
-
-// Helper function to decode a UCS-2 hex string to a UTF-8 string
-function ucs2HexDecode(hexString) {
-  if (
-    !hexString ||
-    typeof hexString !== 'string' ||
-    hexString.length % 4 !== 0
-  ) {
-    // Not a valid UCS-2 hex string, or could be plain text/Base64 already
-    // Attempt to detect if it's likely already Base64 or plain text
-    // This is a heuristic: if it contains non-hex chars or is too short for typical hex, assume it's not UCS2-hex
-    if (!/^[0-9a-fA-F]+$/.test(hexString) || hexString.length < 4) {
-      // Check if it might be Base64 (common for incoming messages from device UI perspective)
-      try {
-        const decoded = Buffer.from(hexString, 'base64').toString('utf-8');
-        // If decoding produces mostly printable chars, assume it was Base64
-        // This is imperfect, but a common scenario for received messages
-        if (/^[\x20-\x7E\s\S]*$/.test(decoded) && decoded.length > 0) {
-          // Check for printable/common chars
-          // console.log(`Interpreting ${hexString} as already Base64 of: ${decoded}`);
-          return decoded; // It might already be base64 encoded human readable string
+// Helper function to encode a UTF-8 string to a UCS-2 hex string
+// This mimics the addon's `encodeMessage` for consistency.
+export function stringToUcs2Hex(textString) {
+  var haut = 0;
+  var result = '';
+  if (typeof textString !== 'string') textString = String(textString);
+  for (var i = 0; i < textString.length; i++) {
+    var b = textString.charCodeAt(i);
+    if (haut != 0) {
+      if (0xdc00 <= b && b <= 0xdfff) {
+        let val = 0x10000 + ((haut - 0xd800) << 10) + (b - 0xdc00);
+        let cp = (val + 0).toString(16).toUpperCase();
+        result += cp;
+        haut = 0;
+        continue;
+      } else {
+        let cp = (haut + 0).toString(16).toUpperCase();
+        while (cp.length < 4) {
+          cp = '0' + cp;
         }
-      } catch (e) {
-        // Not valid Base64 either
+        result += cp;
+        haut = 0;
       }
-      // If not UCS2 hex and not clearly Base64, return as is (might be plain text already)
-      // console.log(`Returning ${hexString} as is (not UCS2 hex or recognized Base64)`);
-      return hexString;
     }
-    // console.log(`Attempting UCS2 hex decode for: ${hexString}`);
+    if (0xd800 <= b && b <= 0xdbff) {
+      haut = b;
+      if (i === textString.length - 1) {
+        let cp = (b + 0).toString(16).toUpperCase();
+        while (cp.length < 4) {
+          cp = '0' + cp;
+        }
+        result += cp;
+      }
+    } else {
+      let cp = (b + 0).toString(16).toUpperCase();
+      while (cp.length < 4) {
+        cp = '0' + cp;
+      }
+      result += cp;
+    }
   }
-
-  let str = '';
-  for (let i = 0; i < hexString.length; i += 4) {
-    const charCode = parseInt(hexString.substring(i, i + 4), 16);
-    str += String.fromCharCode(charCode);
-  }
-  try {
-    // The result of fromCharCode might need to be treated as UTF-8
-    // This step is to ensure it's a valid UTF-8 string before re-encoding to Base64
-    return Buffer.from(str, 'ucs2').toString('utf-8');
-  } catch (e) {
-    console.error('Error decoding UCS-2 hex string:', e);
-    return hexString; // Fallback
-  }
+  return result;
 }
 
 const mockState = {
-  // ... (rest of mockState remains the same) ...
   modem_main_state: 'modem_init_complete',
   pin_status: '0',
   loginfo: 'ok',
@@ -114,52 +98,58 @@ const mockState = {
     {
       id: '1',
       number: '+11234567890',
-      content: toBase64('Hello world! This is an older read message.'),
+      content: stringToUcs2Hex('Hello world! This is an older read message.'),
       date: '23,01,01,10,30,00',
       tag: '0',
       draft_group_id: '',
+      encode_type: 'UCS2',
     },
     {
       id: '2',
       number: '+584124773988',
-      content: toBase64("Hi! What's up?"),
+      content: stringToUcs2Hex("Hi! What's up?"),
       date: '23,01,25,14,35,51',
       tag: '2',
       draft_group_id: '1',
+      encode_type: 'UCS2',
     },
     {
       id: '3',
-      number: toBase64('Equipo Digitel'),
-      content: toBase64('Bienvenido a Digitel. Su saldo es Bs. 50.00.'),
+      number: 'Equipo Digitel',
+      content: stringToUcs2Hex('Bienvenido a Digitel. Su saldo es Bs. 50.00.'),
       date: '23,01,26,09,15,00',
       tag: '1',
       draft_group_id: '',
+      encode_type: 'UCS2',
     },
     {
       id: '4',
       number: '+19876543210',
-      content: toBase64('Meeting at 3 PM today?'),
+      content: stringToUcs2Hex('Meeting at 3 PM today?'),
       date: '23,01,26,11,00,00',
       tag: '1',
       draft_group_id: '',
+      encode_type: 'UCS2',
     },
     {
       id: '5',
-      number: toBase64('Genesis D.'),
-      content: toBase64('Can you call me back?'),
+      number: 'Genesis D.',
+      content: stringToUcs2Hex('Can you call me back?'),
       date: '23,01,25,18,20,10',
       tag: '0',
       draft_group_id: '',
+      encode_type: 'UCS2',
     },
     {
       id: '6',
       number: '+584120000001',
-      content: toBase64(
+      content: stringToUcs2Hex(
         'Your delivery report: Message to +584124773988 successfully delivered.'
       ),
       date: '23,01,25,14,38,15',
       tag: '5',
       draft_group_id: '1',
+      encode_type: 'UCS2',
     },
   ],
   sms_id_counter: 6,
@@ -184,165 +174,166 @@ const mockState = {
   pbm_init_flag: '0',
   pbm_write_flag: '0',
   phonebook_entries: [
+    // Store names/emails as UCS-2 HEX
     {
       pbm_id: '1',
       pbm_location: '1',
-      pbm_name: toBase64('Alexander Salas'),
+      pbm_name: stringToUcs2Hex('Alexander Salas'),
       pbm_number: '+584124773988',
       pbm_anr: '+584161234567',
       pbm_anr1: '',
       pbm_group: 'Common',
-      pbm_email: toBase64('alex.salas@example.com'),
+      pbm_email: stringToUcs2Hex('alex.salas@example.com'),
     },
     {
       pbm_id: '2',
       pbm_location: '1',
-      pbm_name: toBase64('Equipo Digitel'),
+      pbm_name: stringToUcs2Hex('Equipo Digitel'),
       pbm_number: '411',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Common',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '3',
       pbm_location: '1',
-      pbm_name: toBase64('Genesis D.'),
+      pbm_name: stringToUcs2Hex('Genesis D.'),
       pbm_number: '+584249876543',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Colleague',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '4',
       pbm_location: '1',
-      pbm_name: toBase64('Jesus Zuleta'),
+      pbm_name: stringToUcs2Hex('Jesus Zuleta'),
       pbm_number: '+584141112233',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Colleague',
-      pbm_email: toBase64('j.zuleta@work.com'),
+      pbm_email: stringToUcs2Hex('j.zuleta@work.com'),
     },
     {
       pbm_id: '5',
       pbm_location: '1',
-      pbm_name: toBase64('Pedro Molina'),
+      pbm_name: stringToUcs2Hex('Pedro Molina'),
       pbm_number: '+584125556677',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Colleague',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '6',
       pbm_location: '1',
-      pbm_name: toBase64('Roberth Hidalgo'),
+      pbm_name: stringToUcs2Hex('Roberth Hidalgo'),
       pbm_number: '+584268889900',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Colleague',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '7',
       pbm_location: '1',
-      pbm_name: toBase64('Alex Salas'),
+      pbm_name: stringToUcs2Hex('Alex Salas'),
       pbm_number: '+584123216547',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Family',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '8',
       pbm_location: '1',
-      pbm_name: toBase64('Fatma Youssef'),
+      pbm_name: stringToUcs2Hex('Fatma Youssef'),
       pbm_number: '+201001234567',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Family',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '9',
       pbm_location: '0',
-      pbm_name: toBase64('Atencion Cliente'),
+      pbm_name: stringToUcs2Hex('Atencion Cliente'),
       pbm_number: '121',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'SIM Contacts',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '10',
       pbm_location: '0',
-      pbm_name: toBase64('Buzon de voz412'),
+      pbm_name: stringToUcs2Hex('Buzon de voz412'),
       pbm_number: '*123',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'SIM Contacts',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '11',
       pbm_location: '0',
-      pbm_name: toBase64('Club Digitel'),
+      pbm_name: stringToUcs2Hex('Club Digitel'),
       pbm_number: '700',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'SIM Contacts',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '12',
       pbm_location: '1',
-      pbm_name: toBase64('Belkys Merchan'),
+      pbm_name: stringToUcs2Hex('Belkys Merchan'),
       pbm_number: '+584127654321',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Common',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '13',
       pbm_location: '1',
-      pbm_name: toBase64('Curso'),
+      pbm_name: stringToUcs2Hex('Curso'),
       pbm_number: '+584121122334',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Common',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '14',
       pbm_location: '0',
-      pbm_name: toBase64('Hicham'),
+      pbm_name: stringToUcs2Hex('Hicham'),
       pbm_number: '+33612345678',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'SIM Contacts',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '15',
       pbm_location: '1',
-      pbm_name: toBase64('Ramon CANTV'),
+      pbm_name: stringToUcs2Hex('Ramon CANTV'),
       pbm_number: '155',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Common',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
     {
       pbm_id: '16',
       pbm_location: '1',
-      pbm_name: toBase64('Uclides Gil'),
+      pbm_name: stringToUcs2Hex('Uclides Gil'),
       pbm_number: '+584129988776',
       pbm_anr: '',
       pbm_anr1: '',
       pbm_group: 'Common',
-      pbm_email: '',
+      pbm_email: stringToUcs2Hex(''),
     },
   ],
   pbm_id_counter: 16,
@@ -423,7 +414,7 @@ function updateDynamicData() {
     const newSms = {
       id: newId,
       number: sender.pbm_number,
-      content: toBase64(readableContent), // Store as Base64
+      content: stringToUcs2Hex(readableContent),
       date:
         new Date()
           .toLocaleDateString('en-CA', {
@@ -436,6 +427,7 @@ function updateDynamicData() {
         new Date().toLocaleTimeString('en-GB').replace(/:/g, ','),
       tag: '1',
       draft_group_id: '',
+      encode_type: 'UCS2',
     };
     mockState.sms_messages.push(newSms);
     mockState.sms_id_counter = parseInt(newId);
@@ -447,7 +439,7 @@ function updateDynamicData() {
       parseInt(mockState.sms_capacity_info.sms_nv_rev_total) + 1
     ).toString();
     console.log(
-      'Simulated new SMS received (content Base64 encoded):',
+      'Simulated new SMS received (content UCS-2 Hex encoded):',
       newSms.content
     );
   }
@@ -494,44 +486,31 @@ export const setState = (key, value) => {
 export const addSms = (smsData) => {
   mockState.sms_id_counter += 1;
 
-  let readableContent = smsData.MessageBody;
-  // If encode_type suggests hex (like GSM7_default for this device often means UCS2 hex)
-  // and the body looks like a hex string, decode it first.
+  let finalContentForStorage = smsData.MessageBody;
   if (
     smsData.encode_type &&
     (smsData.encode_type.toLowerCase().includes('gsm7') ||
       smsData.encode_type.toLowerCase().includes('ucs2'))
   ) {
-    const decodedFromHex = ucs2HexDecode(smsData.MessageBody);
-    // Check if decoding actually changed it and seems valid
-    if (decodedFromHex !== smsData.MessageBody && decodedFromHex.length > 0) {
-      readableContent = decodedFromHex;
-      console.log(
-        `Decoded MessageBody from UCS2-HEX: "${smsData.MessageBody}" to "${readableContent}"`
-      );
-    } else if (
-      /^[0-9a-fA-F]+$/.test(smsData.MessageBody) &&
-      smsData.MessageBody.length % 4 === 0 &&
-      smsData.MessageBody.length >= 4
-    ) {
-      // It looked like hex but ucs2HexDecode didn't change it significantly or failed,
-      // log a warning or handle as potentially already plain/base64
-      console.log(
-        `MessageBody "${smsData.MessageBody}" looked like hex but ucs2HexDecode returned: "${decodedFromHex}". Storing as Base64 of original or decoded.`
-      );
-      readableContent = decodedFromHex; // Use what ucs2HexDecode returned
-    }
-    // If ucs2HexDecode returned the original string because it didn't look like hex,
-    // readableContent will just be the original MessageBody.
+    console.log(
+      `Received MessageBody (assumed UCS-2 Hex from addon): "${smsData.MessageBody}"`
+    );
+    finalContentForStorage = smsData.MessageBody;
+  } else {
+    console.warn(
+      `MessageBody received as non-hex or with unexpected encode_type: "${smsData.MessageBody}". Converting to UCS-2 Hex for storage.`
+    );
+    finalContentForStorage = stringToUcs2Hex(String(smsData.MessageBody));
   }
 
   const newSms = {
     id: mockState.sms_id_counter.toString(),
     number: smsData.Number,
-    content: toBase64(readableContent), // Always store Base64 of (decoded) human-readable content
+    content: finalContentForStorage,
     date: smsData.sms_time.replace(/;/g, ','),
     tag: smsData.tag || '2',
     draft_group_id: smsData.draft_group_id || '',
+    encode_type: 'UCS2',
   };
   mockState.sms_messages.push(newSms);
 
@@ -556,11 +535,11 @@ export const addSms = (smsData) => {
     setTimeout(
       () => {
         mockState.sms_id_counter += 1;
-        const reportContent = `Delivery Report: Message to ${newSms.number} successfully delivered.`;
+        const reportContentReadable = `Delivery Report: Message to ${newSms.number} successfully delivered.`;
         const reportSms = {
           id: mockState.sms_id_counter.toString(),
           number: newSms.number,
-          content: toBase64(reportContent), // Store Base64
+          content: stringToUcs2Hex(reportContentReadable),
           date:
             new Date()
               .toLocaleDateString('en-CA', {
@@ -573,11 +552,12 @@ export const addSms = (smsData) => {
             new Date().toLocaleTimeString('en-GB').replace(/:/g, ','),
           tag: '5',
           draft_group_id: newSms.id,
+          encode_type: 'UCS2',
         };
         mockState.sms_messages.push(reportSms);
         mockState.sts_received_flag = '1';
         console.log(
-          'Simulated delivery report (content Base64 encoded):',
+          'Simulated delivery report (content UCS-2 Hex encoded):',
           reportSms.content
         );
       },
@@ -644,15 +624,18 @@ export const setSmsRead = (ids) => {
 
 export const addPhonebookEntry = (entryData) => {
   mockState.pbm_id_counter += 1;
+  // Store contact names and emails as UCS-2 Hex
   const newEntry = {
     pbm_id: mockState.pbm_id_counter.toString(),
     pbm_location: entryData.location,
-    pbm_name: entryData.name,
+    pbm_name: stringToUcs2Hex(entryData.name || ''),
     pbm_number: entryData.mobilephone_num,
     pbm_anr: entryData.homephone_num || '',
     pbm_anr1: entryData.officephone_num || '',
     pbm_group: entryData.groupchoose || 'Common',
-    pbm_email: entryData.email || '',
+    pbm_email: entryData.email
+      ? stringToUcs2Hex(entryData.email)
+      : stringToUcs2Hex(''),
   };
   mockState.phonebook_entries.push(newEntry);
   if (newEntry.pbm_location === '0') {
@@ -690,3 +673,4 @@ export const deletePhonebookEntries = (ids) => {
 };
 
 export { mockState as _internalMockState };
+// toBase64 and ucs2HexDecode are removed. stringToUcs2Hex is kept and exported.

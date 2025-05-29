@@ -186,19 +186,19 @@ describe('ZTE P18X API Simulator', () => {
         .send({
           goformId: 'SEND_SMS',
           Number: '+1234567890',
-          MessageBody: mockDataModule.toBase64('Hello test'),
+          MessageBody: mockDataModule.stringToUcs2Hex('Hello test'), // Use stringToUcs2Hex
           sms_time: '24;01;01;12;00;00',
           ID: '-1',
-          encode_type: 'GSM7_default',
+          encode_type: 'UCS2', // Match encode_type
         });
       expect(response.statusCode).toBe(200);
       expect(response.body).toEqual({ result: 'success' });
       expect(mockDataModule.getState('sms_cmd_status_info')).toEqual({
         sms_cmd: 4,
-        sms_cmd_status_result: '1',
-      });
+        sms_cmd_status_result: '3',
+      }); // Expect immediate success status
 
-      jest.runAllTimers();
+      jest.runAllTimers(); // Run timers for the SMS addition and delivery report
 
       const expectedNewMessages =
         mockDataModule.getState('sms_parameter_info').sms_para_status_report ===
@@ -208,25 +208,22 @@ describe('ZTE P18X API Simulator', () => {
       expect(mockDataModule.getState('sms_messages').length).toBe(
         initialSmsCount + expectedNewMessages
       );
-      expect(mockDataModule.getState('sms_cmd_status_info')).toEqual({
-        sms_cmd: 4,
-        sms_cmd_status_result: '3',
-      });
     });
 
     it('should handle SET_MSG_READ command', async () => {
       mockDataModule.addSms({
         Number: '999888777',
-        MessageBody: mockDataModule.toBase64('Unread Test SMS'),
+        MessageBody: mockDataModule.stringToUcs2Hex('Unread Test SMS'),
         sms_time: '25;01;01;10;10;10',
         tag: '1',
+        encode_type: 'UCS2',
       });
       const unreadSms = mockDataModule
         .getState('sms_messages')
         .find(
           (sms) =>
             sms.tag === '1' &&
-            sms.content === mockDataModule.toBase64('Unread Test SMS')
+            sms.content === mockDataModule.stringToUcs2Hex('Unread Test SMS')
         );
       expect(unreadSms).toBeDefined();
 
@@ -244,14 +241,16 @@ describe('ZTE P18X API Simulator', () => {
     it('should handle DELETE_SMS command', async () => {
       mockDataModule.addSms({
         Number: '111222333',
-        MessageBody: mockDataModule.toBase64('SMS to Delete'),
+        MessageBody: mockDataModule.stringToUcs2Hex('SMS to Delete'),
         sms_time: '25;01;01;11;11;11',
         tag: '0',
+        encode_type: 'UCS2',
       });
       const smsToDelete = mockDataModule
         .getState('sms_messages')
         .find(
-          (sms) => sms.content === mockDataModule.toBase64('SMS to Delete')
+          (sms) =>
+            sms.content === mockDataModule.stringToUcs2Hex('SMS to Delete')
         );
       expect(smsToDelete).toBeDefined();
       const initialSmsCount = mockDataModule.getState('sms_messages').length;
@@ -263,8 +262,8 @@ describe('ZTE P18X API Simulator', () => {
       expect(response.body).toEqual({ result: 'success' });
       expect(mockDataModule.getState('sms_cmd_status_info')).toEqual({
         sms_cmd: 6,
-        sms_cmd_status_result: '1',
-      });
+        sms_cmd_status_result: '3',
+      }); // Expect immediate success
 
       jest.runAllTimers();
       expect(mockDataModule.getState('sms_messages').length).toBe(
@@ -275,10 +274,6 @@ describe('ZTE P18X API Simulator', () => {
           .getState('sms_messages')
           .find((m) => m.id === smsToDelete.id)
       ).toBeUndefined();
-      expect(mockDataModule.getState('sms_cmd_status_info')).toEqual({
-        sms_cmd: 6,
-        sms_cmd_status_result: '3',
-      });
     });
 
     it('should handle CONNECT_NETWORK and DISCONNECT_NETWORK', async () => {
@@ -302,15 +297,14 @@ describe('ZTE P18X API Simulator', () => {
     it('should handle PBM_CONTACT_ADD', async () => {
       const initialPbmCount =
         mockDataModule.getState('phonebook_entries').length;
-      const newContactNameBase64 = mockDataModule.toBase64(
-        'Test Add Contact API'
-      );
+      const contactName = 'Test Add Contact API';
+      const contactNameHex = mockDataModule.stringToUcs2Hex(contactName);
       const response = await request(app)
         .post('/goform/goform_set_cmd_process')
         .send({
           goformId: 'PBM_CONTACT_ADD',
           location: '1',
-          name: newContactNameBase64,
+          name: contactName, // Send plain text, server will encode
           mobilephone_num: '1234509876',
           groupchoose: 'TestGroup',
         });
@@ -324,22 +318,22 @@ describe('ZTE P18X API Simulator', () => {
       expect(
         mockDataModule
           .getState('phonebook_entries')
-          .find((c) => c.pbm_name === newContactNameBase64)
+          .find((c) => c.pbm_name === contactNameHex)
       ).toBeDefined();
     });
 
     it('should handle PBM_CONTACT_DEL', async () => {
-      const contactToDelNameBase64 = mockDataModule.toBase64(
-        'Contact ToDelete API'
-      );
+      const contactToDelName = 'Contact ToDelete API';
+      const contactToDelNameHex =
+        mockDataModule.stringToUcs2Hex(contactToDelName);
       mockDataModule.addPhonebookEntry({
         location: '1',
-        name: contactToDelNameBase64,
+        name: contactToDelName,
         mobilephone_num: '111222333',
-      });
+      }); // addPhonebookEntry will encode
       const entryToDel = mockDataModule
         .getState('phonebook_entries')
-        .find((c) => c.pbm_name === contactToDelNameBase64);
+        .find((c) => c.pbm_name === contactToDelNameHex);
       expect(entryToDel).toBeDefined();
       const initialPbmCount =
         mockDataModule.getState('phonebook_entries').length;
@@ -400,7 +394,7 @@ describe('ZTE P18X API Simulator', () => {
       expect(response.statusCode).toBe(400);
       expect(response.body).toHaveProperty(
         'error',
-        'goformId parameter is missing'
+        'goformId parameter is missing in request body or body is malformed'
       );
     });
 
@@ -408,8 +402,11 @@ describe('ZTE P18X API Simulator', () => {
       const response = await request(app)
         .post('/goform/goform_set_cmd_process')
         .send({ goformId: 'UNKNOWN_GOFORM_ID' });
-      expect(response.statusCode).toBe(200);
-      expect(response.body).toEqual({ result: 'failure' });
+      expect(response.statusCode).toBe(400); // Changed from 200 to 400 as per updated routes/api.js
+      expect(response.body).toEqual({
+        result: 'failure',
+        error: 'Unhandled goformId: UNKNOWN_GOFORM_ID',
+      });
     });
   });
 });

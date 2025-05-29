@@ -27,7 +27,6 @@ beforeAll(() => {
       )
     );
   } catch (_errorUnused) {
-    // Prefixed unused error variable
     console.error(
       'Error creating initialMockStateSnapshot in mockData.spec.js:',
       _errorUnused
@@ -47,8 +46,7 @@ beforeEach(() => {
           mockDataModule._internalMockState || mockDataModule.mockState
         )
       );
-    } catch (_eUnused) {
-      // Prefixed unused error variable
+    } catch (_eUnusedAlso) {
       initialMockStateSnapshot = {};
     }
   }
@@ -78,12 +76,15 @@ describe('data/mockData.js', () => {
     expect(true).toBe(true);
   });
 
-  describe('toBase64 helper', () => {
-    it('should correctly encode a string to Base64', () => {
-      expect(mockDataModule.toBase64).toBeDefined();
-      const testString = 'Hello World!';
-      const expectedBase64 = Buffer.from(testString).toString('base64');
-      expect(mockDataModule.toBase64(testString)).toBe(expectedBase64);
+  describe('stringToUcs2Hex helper', () => {
+    // Test stringToUcs2Hex instead of toBase64
+    it('should correctly encode a string to UCS-2 Hex', () => {
+      expect(mockDataModule.stringToUcs2Hex).toBeDefined();
+      expect(mockDataModule.stringToUcs2Hex('hi')).toBe('00680069');
+      expect(mockDataModule.stringToUcs2Hex('Hello')).toBe(
+        '00480065006C006C006F'
+      );
+      expect(mockDataModule.stringToUcs2Hex('')).toBe('');
     });
   });
 
@@ -122,21 +123,28 @@ describe('data/mockData.js', () => {
       jest.useRealTimers();
     });
 
-    it('addSms should add an SMS and update counters for unread', () => {
+    it('addSms should add an SMS (as UCS-2 Hex) and update counters for unread', () => {
       const initialSmsCount = mockDataModule.getState('sms_messages').length;
       const initialUnread = parseInt(mockDataModule.getState('sms_unread_num'));
       const initialNvRev = parseInt(
         mockDataModule.getState('sms_capacity_info').sms_nv_rev_total
       );
+      const readableMsg = 'New SMS';
+      const hexMsg = mockDataModule.stringToUcs2Hex(readableMsg);
 
       mockDataModule.addSms({
         Number: '12345',
-        MessageBody: mockDataModule.toBase64('New SMS'),
+        MessageBody: hexMsg,
         sms_time: '25;01;01;00;00;00',
         tag: '1',
+        encode_type: 'UCS2',
       });
       jest.runAllTimers();
 
+      const addedMessage = mockDataModule
+        .getState('sms_messages')
+        .find((m) => m.content === hexMsg);
+      expect(addedMessage).toBeDefined();
       expect(mockDataModule.getState('sms_messages').length).toBe(
         initialSmsCount + 1
       );
@@ -149,11 +157,13 @@ describe('data/mockData.js', () => {
       ).toBe(initialNvRev + 1);
     });
 
-    it('addSms for a sent message should update sent count and potentially add delivery report', () => {
+    it('addSms for a sent message (UCS-2 Hex) should update sent count and potentially add delivery report', () => {
       const initialSmsCount = mockDataModule.getState('sms_messages').length;
       const initialSent = parseInt(
         mockDataModule.getState('sms_capacity_info').sms_nv_send_total
       );
+      const readableMsg = 'Sent SMS';
+      const hexMsg = mockDataModule.stringToUcs2Hex(readableMsg);
 
       mockDataModule.setState('sms_parameter_info', {
         ...mockDataModule.getState('sms_parameter_info'),
@@ -162,9 +172,10 @@ describe('data/mockData.js', () => {
 
       mockDataModule.addSms({
         Number: '67890',
-        MessageBody: mockDataModule.toBase64('Sent SMS'),
+        MessageBody: hexMsg,
         sms_time: '25;01;01;00;00;00',
         tag: '2',
+        encode_type: 'UCS2',
       });
 
       expect(
@@ -183,9 +194,10 @@ describe('data/mockData.js', () => {
     it('deleteSms should remove SMS and update counters', () => {
       const addedSms = mockDataModule.addSms({
         Number: '555',
-        MessageBody: mockDataModule.toBase64('To Delete'),
+        MessageBody: mockDataModule.stringToUcs2Hex('To Delete'),
         sms_time: '25;01;01;00;00;00',
         tag: '1',
+        encode_type: 'UCS2',
       });
       jest.runAllTimers();
       const initialSmsCount = mockDataModule.getState('sms_messages').length;
@@ -204,9 +216,10 @@ describe('data/mockData.js', () => {
     it('setSmsRead should mark unread SMS as read and update counters', () => {
       const addedSms = mockDataModule.addSms({
         Number: '777',
-        MessageBody: mockDataModule.toBase64('Mark as Read'),
+        MessageBody: mockDataModule.stringToUcs2Hex('Mark as Read'),
         sms_time: '25;01;01;00;00;00',
         tag: '1',
+        encode_type: 'UCS2',
       });
       jest.runAllTimers();
       const initialUnread = parseInt(mockDataModule.getState('sms_unread_num'));
@@ -223,16 +236,18 @@ describe('data/mockData.js', () => {
   });
 
   describe('Phonebook functions', () => {
-    it('addPhonebookEntry should add an entry and update counters (device)', () => {
+    it('addPhonebookEntry should add an entry (UCS-2 Hex) and update counters (device)', () => {
       const initialPbmCount =
         mockDataModule.getState('phonebook_entries').length;
       const initialDevUsed = parseInt(
         mockDataModule.getState('pbm_capacity_info').pbm_dev_used_record_num
       );
+      const contactName = 'New Contact Dev';
+      const contactNameHex = mockDataModule.stringToUcs2Hex(contactName);
 
       mockDataModule.addPhonebookEntry({
         location: '1',
-        name: mockDataModule.toBase64('New Contact Dev'),
+        name: contactName, // Send plain, addPhonebookEntry will convert to hex
         mobilephone_num: '1230009999',
       });
 
@@ -244,18 +259,24 @@ describe('data/mockData.js', () => {
           mockDataModule.getState('pbm_capacity_info').pbm_dev_used_record_num
         )
       ).toBe(initialDevUsed + 1);
+      const addedEntry = mockDataModule
+        .getState('phonebook_entries')
+        .find((e) => e.pbm_name === contactNameHex);
+      expect(addedEntry).toBeDefined();
     });
 
-    it('addPhonebookEntry should add an entry and update counters (SIM)', () => {
+    it('addPhonebookEntry should add an entry (UCS-2 Hex) and update counters (SIM)', () => {
       const initialPbmCount =
         mockDataModule.getState('phonebook_entries').length;
       const initialSimUsed = parseInt(
         mockDataModule.getState('pbm_capacity_info').pbm_sim_used_record_num
       );
+      const contactName = 'New Contact SIM';
+      const contactNameHex = mockDataModule.stringToUcs2Hex(contactName);
 
       mockDataModule.addPhonebookEntry({
         location: '0',
-        name: mockDataModule.toBase64('New Contact SIM'),
+        name: contactName, // Send plain
         mobilephone_num: '7890006666',
       });
 
@@ -267,12 +288,16 @@ describe('data/mockData.js', () => {
           mockDataModule.getState('pbm_capacity_info').pbm_sim_used_record_num
         )
       ).toBe(initialSimUsed + 1);
+      const addedEntry = mockDataModule
+        .getState('phonebook_entries')
+        .find((e) => e.pbm_name === contactNameHex);
+      expect(addedEntry).toBeDefined();
     });
 
     it('deletePhonebookEntries should remove entries and update counters (device)', () => {
       const addedEntry = mockDataModule.addPhonebookEntry({
         location: '1',
-        name: mockDataModule.toBase64('Deletable Contact Dev'),
+        name: 'Deletable Contact Dev',
         mobilephone_num: '000111222',
       });
       const initialPbmCount =
@@ -296,7 +321,7 @@ describe('data/mockData.js', () => {
     it('deletePhonebookEntries should remove entries and update counters (SIM)', () => {
       const addedEntry = mockDataModule.addPhonebookEntry({
         location: '0',
-        name: mockDataModule.toBase64('Deletable Contact SIM'),
+        name: 'Deletable Contact SIM',
         mobilephone_num: '333444555',
       });
       const initialPbmCount =
