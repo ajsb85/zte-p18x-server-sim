@@ -1,0 +1,46 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+BIN	node_modules/debug/Makefile	/^BIN := $(THIS_DIR)\/node_modules\/.bin$/;"	m
+BROWSERIFY	node_modules/debug/Makefile	/^BROWSERIFY ?= $(NODE) $(BIN)\/browserify$/;"	m
+JSL	node_modules/extsprintf/Makefile	/^JSL		 = jsl$/;"	m
+JSL_CONF_NODE	node_modules/extsprintf/Makefile	/^JSL_CONF_NODE	 = jsl.node.conf$/;"	m
+JSL_FILES_NODE	node_modules/extsprintf/Makefile	/^JSL_FILES_NODE   = $(JS_FILES)$/;"	m
+JSSTYLE	node_modules/extsprintf/Makefile	/^JSSTYLE		 = jsstyle$/;"	m
+JSSTYLE_FILES	node_modules/extsprintf/Makefile	/^JSSTYLE_FILES	 = $(JS_FILES)$/;"	m
+JS_FILES	node_modules/extsprintf/Makefile	/^JS_FILES	:= $(shell find examples lib -name '*.js')$/;"	m
+NODE	node_modules/debug/Makefile	/^NODE ?= $(shell which node)$/;"	m
+NODE_OPTS	node_modules/json-stringify-safe/Makefile	/^NODE_OPTS =$/;"	m
+PATH	node_modules/debug/Makefile	/^PATH := node_modules\/.bin:$(PATH)$/;"	m
+PKG	node_modules/debug/Makefile	/^PKG ?= $(if $(YARN),$(YARN),$(NODE) $(shell which npm))$/;"	m
+SHELL	node_modules/debug/Makefile	/^SHELL := \/bin\/bash$/;"	m
+SHELL	node_modules/delayed-stream/Makefile	/^SHELL := \/bin\/bash$/;"	m
+SHELL	node_modules/stack-trace/Makefile	/^SHELL := \/bin\/bash$/;"	m
+TEST_OPTS	node_modules/json-stringify-safe/Makefile	/^TEST_OPTS =$/;"	m
+THIS_DIR	node_modules/debug/Makefile	/^THIS_DIR:=$(shell cd $(dir $(THIS_MAKEFILE_PATH));pwd)$/;"	m
+THIS_MAKEFILE_PATH	node_modules/debug/Makefile	/^THIS_MAKEFILE_PATH:=$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))$/;"	m
+YARN	node_modules/debug/Makefile	/^YARN ?= $(shell which yarn)$/;"	m
+autospec	node_modules/json-stringify-safe/Makefile	/^autospec:$/;"	t
+autotest	node_modules/json-stringify-safe/Makefile	/^autotest:$/;"	t
+check	node_modules/extsprintf/Makefile	/^check:$/;"	t
+clean	node_modules/json-stringify-safe/Makefile	/^clean:$/;"	t
+coveralls	node_modules/debug/Makefile	/^coveralls:$/;"	t
+install	node_modules/debug/Makefile	/^install: node_modules$/;"	t
+lint	node_modules/debug/Makefile	/^lint: .FORCE$/;"	t
+love	node_modules/json-stringify-safe/Makefile	/^love:$/;"	t
+node_modules	node_modules/debug/Makefile	/^node_modules: package.json$/;"	t
+pack	node_modules/json-stringify-safe/Makefile	/^pack:$/;"	t
+publish	node_modules/json-stringify-safe/Makefile	/^publish:$/;"	t
+release	node_modules/stack-trace/Makefile	/^release:$/;"	t
+spec	node_modules/json-stringify-safe/Makefile	/^spec:$/;"	t
+tag	node_modules/json-stringify-safe/Makefile	/^tag:$/;"	t
+test	node_modules/debug/Makefile	/^test: .FORCE$/;"	t
+test	node_modules/delayed-stream/Makefile	/^test:$/;"	t
+test	node_modules/json-stringify-safe/Makefile	/^test:$/;"	t
+test	node_modules/stack-trace/Makefile	/^test:$/;"	t
+test-browser	node_modules/debug/Makefile	/^test-browser: .FORCE$/;"	t
+test-node	node_modules/debug/Makefile	/^test-node: .FORCE$/;"	t

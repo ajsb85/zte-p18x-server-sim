@@ -1,0 +1,843 @@
+{
+  "info": {
+    "_postman_id": "c2a9f4e1-7b8a-4f3c-8d1e-a1b2c3d4e5f6",
+    "name": "ZTE P18X Simulator",
+    "description": "Postman collection for testing the ZTE P18X API Simulator.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Information & Status",
+      "item": [
+        {
+          "name": "Get Multiple Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=loginfo,modem_main_state,pin_status,network_provider,signalbar,ppp_status,sms_unread_num,lan_ipaddr,simcard_roam,network_type&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "loginfo,modem_main_state,pin_status,network_provider,signalbar,ppp_status,sms_unread_num,lan_ipaddr,simcard_roam,network_type"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Retrieves a set of common status indicators from the device."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Hardware & Software Version (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=HardwareVersion,version_info&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "HardwareVersion,version_info"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Retrieves hardware version and detailed software version object from mockState as JSON."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Version Info (Plain Text)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=version_info",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "version_info"
+                }
+              ]
+            },
+            "description": "Retrieves version_info as plain text (special handling in API)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Web Version (Specific Route)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/zte_web/web/version",
+              "host": ["{{baseUrl}}"],
+              "path": ["zte_web", "web", "version"]
+            },
+            "description": "Retrieves version info from the dedicated /zte_web/web/version plain text endpoint."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Realtime Traffic Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=realtime_rx_bytes,realtime_tx_bytes,realtime_time,realtime_rx_thrpt,realtime_tx_thrpt&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "realtime_rx_bytes,realtime_tx_bytes,realtime_time,realtime_rx_thrpt,realtime_tx_thrpt"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Requests to get device status and information."
+    },
+    {
+      "name": "Login & Logout",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "LOGIN",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "admin",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            },
+            "description": "Authenticate with the device. Default password in mockData is 'admin'."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "LOGOUT",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "SMS",
+      "item": [
+        {
+          "name": "Get SMS Capacity Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=sms_capacity_info&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "sms_capacity_info"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get SMS Parameters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=sms_parameter_info&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "sms_parameter_info"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get SMS List (All)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=sms_data_total&page=0&data_per_page=20&mem_store=1&tags=10&order_by=id_desc&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "sms_data_total"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "data_per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "mem_store",
+                  "value": "1"
+                },
+                {
+                  "key": "tags",
+                  "value": "10"
+                },
+                {
+                  "key": "order_by",
+                  "value": "id_desc"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ],
+              "description": "Note: The current mock server simplifies this and returns all messages if 'sms_data_total' or 'sms_page_data' is in cmd."
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send SMS",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "SEND_SMS",
+                  "type": "text"
+                },
+                {
+                  "key": "Number",
+                  "value": "+12345678901",
+                  "type": "text"
+                },
+                {
+                  "key": "MessageBody",
+                  "value": "SGVsbG8gZnJvbSBQb3N0bWFuIQ==",
+                  "type": "text",
+                  "description": "Base64 for 'Hello from Postman!'"
+                },
+                {
+                  "key": "sms_time",
+                  "value": "25;05;29;10;30;00",
+                  "type": "text",
+                  "description": "Format: YY;MM;DD;HH;MM;SS"
+                },
+                {
+                  "key": "ID",
+                  "value": "-1",
+                  "type": "text"
+                },
+                {
+                  "key": "encode_type",
+                  "value": "GSM7_default",
+                  "type": "text",
+                  "description": "Or unicode, etc."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set SMS Read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "SET_MSG_READ",
+                  "type": "text"
+                },
+                {
+                  "key": "msg_id",
+                  "value": "3;4",
+                  "type": "text",
+                  "description": "Semicolon-separated IDs of messages to mark as read (e.g., from the unread messages in mockData)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete SMS",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "DELETE_SMS",
+                  "type": "text"
+                },
+                {
+                  "key": "msg_id",
+                  "value": "1",
+                  "type": "text",
+                  "description": "Semicolon-separated IDs"
+                },
+                {
+                  "key": "mem_store",
+                  "value": "1",
+                  "type": "text",
+                  "description": "0 for SIM, 1 for NV (device)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get SMS Command Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=sms_cmd_status_info&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "sms_cmd_status_info"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Used to poll the status of SMS operations like send/delete."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Phonebook",
+      "item": [
+        {
+          "name": "Get Phonebook Capacity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=pbm_capacity_info&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "pbm_capacity_info"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Phonebook List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=pbm_data_total&page_no=0&data_per_page=50&location_val=2&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "pbm_data_total"
+                },
+                {
+                  "key": "page_no",
+                  "value": "0"
+                },
+                {
+                  "key": "data_per_page",
+                  "value": "50"
+                },
+                {
+                  "key": "location_val",
+                  "value": "2",
+                  "description": "0:SIM, 1:Device, 2:All. Mock server returns all for pbm_data_total."
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Phonebook Entry",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "PBM_CONTACT_ADD",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "1",
+                  "type": "text",
+                  "description": "0 for SIM, 1 for Device (NV)"
+                },
+                {
+                  "key": "name",
+                  "value": "UG9zdG1hbiBUZXN0ZXI=",
+                  "type": "text",
+                  "description": "Base64 for 'Postman Tester'"
+                },
+                {
+                  "key": "mobilephone_num",
+                  "value": "+19998887777",
+                  "type": "text"
+                },
+                {
+                  "key": "homephone_num",
+                  "value": "+19998886666",
+                  "type": "text"
+                },
+                {
+                  "key": "officephone_num",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "cG9zdG1hbkB0ZXN0LmNvbQ==",
+                  "type": "text",
+                  "description": "Base64 for 'postman@test.com'"
+                },
+                {
+                  "key": "groupchoose",
+                  "value": "Common",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Phonebook Entry",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "PBM_CONTACT_DEL",
+                  "type": "text"
+                },
+                {
+                  "key": "delete_id",
+                  "value": "1",
+                  "type": "text",
+                  "description": "Comma-separated IDs to delete"
+                },
+                {
+                  "key": "location",
+                  "value": "2",
+                  "type": "text",
+                  "description": "Location: 0=SIM, 1=NV, 2=ALL. Mock server uses this to update counts but filters by ID."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get PBM Write Flag",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=pbm_write_flag&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "pbm_write_flag"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Indicates if phonebook is busy with a write operation."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Connection",
+      "item": [
+        {
+          "name": "Connect Network",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "CONNECT_NETWORK",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Disconnect Network",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "DISCONNECT_NETWORK",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "WIFI",
+      "item": [
+        {
+          "name": "Get WIFI Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=SSID1,AuthMode,HideSSID,WPAPSK1,MAX_Access_num,EncrypType,RadioOff,m_ssid_enable,m_SSID,m_AuthMode,m_HideSSID,m_MAX_Access_num&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "SSID1,AuthMode,HideSSID,WPAPSK1,MAX_Access_num,EncrypType,RadioOff,m_ssid_enable,m_SSID,m_AuthMode,m_HideSSID,m_MAX_Access_num"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set WIFI Settings (Main SSID)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "SET_WIFI_SSID1_SETTINGS",
+                  "type": "text"
+                },
+                {
+                  "key": "ssid",
+                  "value": "My_ZTE_WiFi_New",
+                  "type": "text"
+                },
+                {
+                  "key": "security_mode",
+                  "value": "WPA2PSK",
+                  "type": "text"
+                },
+                {
+                  "key": "broadcastSsidEnabled",
+                  "value": "false",
+                  "type": "text",
+                  "description": "Actual device might expect '0' or '1', or 'true'/'false'. Check device behavior. Mock server handles 'true'/'false' for HideSSID."
+                },
+                {
+                  "key": "passphrase",
+                  "value": "newSecurePassword!",
+                  "type": "text"
+                },
+                {
+                  "key": "MAX_Access_num",
+                  "value": "15",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "USSD",
+      "item": [
+        {
+          "name": "Send USSD Command",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "USSD_PROCESS",
+                  "type": "text"
+                },
+                {
+                  "key": "USSD_operator",
+                  "value": "ussd_send",
+                  "type": "text"
+                },
+                {
+                  "key": "USSD_send_number",
+                  "value": "*123#",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get USSD Status and Response",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_get_cmd_process?cmd=ussd_write_flag,ussd_data_info&isMulti=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_get_cmd_process"],
+              "query": [
+                {
+                  "key": "cmd",
+                  "value": "ussd_write_flag,ussd_data_info"
+                },
+                {
+                  "key": "isMulti",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Poll this after sending a USSD command to get the result."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Set Web Language",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "goformId",
+                  "value": "SET_WEB_LANGUAGE",
+                  "type": "text"
+                },
+                {
+                  "key": "Language",
+                  "value": "es",
+                  "type": "text",
+                  "description": "e.g., en, es, fr"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goform/goform_set_cmd_process",
+              "host": ["{{baseUrl}}"],
+              "path": ["goform", "goform_set_cmd_process"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

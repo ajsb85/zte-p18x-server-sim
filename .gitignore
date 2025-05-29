@@ -1,0 +1,48 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production
+/build
+/dist
+
+# Misc
+.DS_Store
+*.pem
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment Variables
+.env
+.env.test
+.env.production
+.env*.local
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Postman
+postman/reports/
+*.postman_environment.json
+*.postman_globals.json
+# Keep collection file if you want to version it
+# !postman/*_Postman_Collection.json
+
+# IDE specific
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
