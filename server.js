@@ -4,14 +4,42 @@ import bodyParser from 'body-parser';
 import morgan from 'morgan';
 import apiRoutes from './routes/api.js';
 import * as mockData from './data/mockData.js';
+import querystring from 'querystring'; // Import querystring module
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(morgan('dev'));
-app.use(bodyParser.urlencoded({ extended: false }));
+
+// Standard body parsers
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// Custom middleware to handle text/plain as URL-encoded
+app.use((req, res, next) => {
+  if (req.is('text/plain') && req.method === 'POST') {
+    let data = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk) => {
+      data += chunk;
+    });
+    req.on('end', () => {
+      try {
+        // Attempt to parse as URL-encoded query string
+        req.body = querystring.parse(data);
+        console.log('Parsed text/plain as URL-encoded body:', req.body);
+      } catch (e) {
+        console.error('Error parsing text/plain body:', e);
+        // If parsing fails, leave req.body as is (or set to empty object)
+        // req.body will likely be undefined or an empty object from previous parsers
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+});
 
 // CORS Middleware
 app.use((req, res, next) => {
@@ -50,32 +78,26 @@ app.get('/zte_web/web/version', (req, res) => {
 });
 
 // Simple 404 error handler
-app.use((req, res, _nextUnused) => {
-  // Renamed unused 'next'
+app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.method} ${req.originalUrl}`);
   error.status = 404;
-  res.status(404).json({
-    error: {
-      message: error.message,
-      status: 404,
-    },
-  });
+  next(error);
 });
 
 // General error handler
-app.use((error, _reqUnused, res, _nextUnused) => {
-  // Renamed unused 'req' and 'next'
+app.use((error, req, res, _nextUnused) => {
+  console.error('General Error Handler Caught:', error.stack || error);
   res.status(error.status || 500);
   res.json({
     error: {
-      message: error.message,
+      message: error.message || 'Internal Server Error',
       status: error.status || 500,
     },
   });
 });
 
 import { fileURLToPath } from 'url';
-import { resolve } from 'path'; // Removed unused 'dirname'
+import { resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const isMainModule =

@@ -9,11 +9,9 @@ function getRandomInt(min, max) {
 
 // Helper function to Base64 encode a string (UTF-8)
 export function toBase64(str) {
-  // EXPORTED
   try {
     return btoa(unescape(encodeURIComponent(str)));
   } catch (_e) {
-    // Prefixed 'e' with underscore as it's not used
     if (typeof Buffer !== 'undefined') {
       return Buffer.from(str, 'utf-8').toString('base64');
     }
@@ -22,8 +20,54 @@ export function toBase64(str) {
   }
 }
 
+// Helper function to decode a UCS-2 hex string to a UTF-8 string
+function ucs2HexDecode(hexString) {
+  if (
+    !hexString ||
+    typeof hexString !== 'string' ||
+    hexString.length % 4 !== 0
+  ) {
+    // Not a valid UCS-2 hex string, or could be plain text/Base64 already
+    // Attempt to detect if it's likely already Base64 or plain text
+    // This is a heuristic: if it contains non-hex chars or is too short for typical hex, assume it's not UCS2-hex
+    if (!/^[0-9a-fA-F]+$/.test(hexString) || hexString.length < 4) {
+      // Check if it might be Base64 (common for incoming messages from device UI perspective)
+      try {
+        const decoded = Buffer.from(hexString, 'base64').toString('utf-8');
+        // If decoding produces mostly printable chars, assume it was Base64
+        // This is imperfect, but a common scenario for received messages
+        if (/^[\x20-\x7E\s\S]*$/.test(decoded) && decoded.length > 0) {
+          // Check for printable/common chars
+          // console.log(`Interpreting ${hexString} as already Base64 of: ${decoded}`);
+          return decoded; // It might already be base64 encoded human readable string
+        }
+      } catch (e) {
+        // Not valid Base64 either
+      }
+      // If not UCS2 hex and not clearly Base64, return as is (might be plain text already)
+      // console.log(`Returning ${hexString} as is (not UCS2 hex or recognized Base64)`);
+      return hexString;
+    }
+    // console.log(`Attempting UCS2 hex decode for: ${hexString}`);
+  }
+
+  let str = '';
+  for (let i = 0; i < hexString.length; i += 4) {
+    const charCode = parseInt(hexString.substring(i, i + 4), 16);
+    str += String.fromCharCode(charCode);
+  }
+  try {
+    // The result of fromCharCode might need to be treated as UTF-8
+    // This step is to ensure it's a valid UTF-8 string before re-encoding to Base64
+    return Buffer.from(str, 'ucs2').toString('utf-8');
+  } catch (e) {
+    console.error('Error decoding UCS-2 hex string:', e);
+    return hexString; // Fallback
+  }
+}
+
 const mockState = {
-  // System & Connection Status
+  // ... (rest of mockState remains the same) ...
   modem_main_state: 'modem_init_complete',
   pin_status: '0',
   loginfo: 'ok',
@@ -375,10 +419,11 @@ function updateDynamicData() {
     const newId = (mockState.sms_id_counter + 1).toString();
     const senderIndex = getRandomInt(0, mockState.phonebook_entries.length - 1);
     const sender = mockState.phonebook_entries[senderIndex];
+    const readableContent = `This is a new random SMS! #${newId}`;
     const newSms = {
       id: newId,
       number: sender.pbm_number,
-      content: toBase64(`This is a new random SMS! #${newId}`),
+      content: toBase64(readableContent), // Store as Base64
       date:
         new Date()
           .toLocaleDateString('en-CA', {
@@ -401,7 +446,10 @@ function updateDynamicData() {
     mockState.sms_capacity_info.sms_nv_rev_total = (
       parseInt(mockState.sms_capacity_info.sms_nv_rev_total) + 1
     ).toString();
-    console.log('Simulated new SMS received:', newSms.content);
+    console.log(
+      'Simulated new SMS received (content Base64 encoded):',
+      newSms.content
+    );
   }
 }
 
@@ -445,15 +493,48 @@ export const setState = (key, value) => {
 
 export const addSms = (smsData) => {
   mockState.sms_id_counter += 1;
+
+  let readableContent = smsData.MessageBody;
+  // If encode_type suggests hex (like GSM7_default for this device often means UCS2 hex)
+  // and the body looks like a hex string, decode it first.
+  if (
+    smsData.encode_type &&
+    (smsData.encode_type.toLowerCase().includes('gsm7') ||
+      smsData.encode_type.toLowerCase().includes('ucs2'))
+  ) {
+    const decodedFromHex = ucs2HexDecode(smsData.MessageBody);
+    // Check if decoding actually changed it and seems valid
+    if (decodedFromHex !== smsData.MessageBody && decodedFromHex.length > 0) {
+      readableContent = decodedFromHex;
+      console.log(
+        `Decoded MessageBody from UCS2-HEX: "${smsData.MessageBody}" to "${readableContent}"`
+      );
+    } else if (
+      /^[0-9a-fA-F]+$/.test(smsData.MessageBody) &&
+      smsData.MessageBody.length % 4 === 0 &&
+      smsData.MessageBody.length >= 4
+    ) {
+      // It looked like hex but ucs2HexDecode didn't change it significantly or failed,
+      // log a warning or handle as potentially already plain/base64
+      console.log(
+        `MessageBody "${smsData.MessageBody}" looked like hex but ucs2HexDecode returned: "${decodedFromHex}". Storing as Base64 of original or decoded.`
+      );
+      readableContent = decodedFromHex; // Use what ucs2HexDecode returned
+    }
+    // If ucs2HexDecode returned the original string because it didn't look like hex,
+    // readableContent will just be the original MessageBody.
+  }
+
   const newSms = {
     id: mockState.sms_id_counter.toString(),
     number: smsData.Number,
-    content: smsData.MessageBody,
+    content: toBase64(readableContent), // Always store Base64 of (decoded) human-readable content
     date: smsData.sms_time.replace(/;/g, ','),
     tag: smsData.tag || '2',
     draft_group_id: smsData.draft_group_id || '',
   };
   mockState.sms_messages.push(newSms);
+
   if (newSms.tag === '2') {
     mockState.sms_capacity_info.sms_nv_send_total = (
       parseInt(mockState.sms_capacity_info.sms_nv_send_total) + 1
@@ -467,6 +548,7 @@ export const addSms = (smsData) => {
     ).toString();
     mockState.sms_received_flag = '1';
   }
+
   if (
     newSms.tag === '2' &&
     mockState.sms_parameter_info.sms_para_status_report === '1'
@@ -474,12 +556,11 @@ export const addSms = (smsData) => {
     setTimeout(
       () => {
         mockState.sms_id_counter += 1;
+        const reportContent = `Delivery Report: Message to ${newSms.number} successfully delivered.`;
         const reportSms = {
           id: mockState.sms_id_counter.toString(),
           number: newSms.number,
-          content: toBase64(
-            `Delivery Report: Message to ${newSms.number} successfully delivered.`
-          ),
+          content: toBase64(reportContent), // Store Base64
           date:
             new Date()
               .toLocaleDateString('en-CA', {
@@ -495,7 +576,10 @@ export const addSms = (smsData) => {
         };
         mockState.sms_messages.push(reportSms);
         mockState.sts_received_flag = '1';
-        console.log('Simulated delivery report:', reportSms.content);
+        console.log(
+          'Simulated delivery report (content Base64 encoded):',
+          reportSms.content
+        );
       },
       getRandomInt(2000, 7000)
     );
