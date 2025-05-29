@@ -52,6 +52,7 @@ router.get('/goform/goform_get_cmd_process', (req, res) => {
       } else if (command === 'version_info') {
         responseData[command] = mockData.getState('version_info');
       }
+      // Add more known complex object keys here if needed
     }
   });
 
@@ -60,6 +61,20 @@ router.get('/goform/goform_get_cmd_process', (req, res) => {
     commands.includes('sms_page_data')
   ) {
     responseData.messages = mockData.getState('sms_messages');
+  }
+
+  // Ensure 'messages' array exists if 'sms_status_rpt_data' is requested
+  if (commands.includes('sms_status_rpt_data')) {
+    // The actual device might return specific status report objects here.
+    // For now, we'll ensure the 'messages' key exists, defaulting to an empty array.
+    // If you have examples of what these status reports look like, we can mock them.
+    if (!responseData.messages) {
+      // Could be combined with sms_data_total
+      responseData.messages = []; // Default to empty array for status reports
+    }
+    // If specific status report data needs to be part of responseData.sms_status_rpt_data, add it here.
+    // For example: responseData.sms_status_rpt_data = { some_status_key: "value" };
+    // However, the error is `aRequest.messages`, so ensuring `messages` key is present is primary.
   }
 
   if (
@@ -137,7 +152,7 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
         mockData.setState('sms_cmd_status_info', {
           sms_cmd: 4,
           sms_cmd_status_result: '3',
-        }); // Set to success immediately
+        });
 
         setTimeout(() => {
           try {
@@ -165,31 +180,29 @@ router.post('/goform/goform_set_cmd_process', (req, res, next) => {
         }
         if (req.body.save_time !== undefined) {
           const validityMap = {
-            default: '143', // Default, often 12 hours or device max
+            default: '143',
             one_hour: '11',
             six_hours: '71',
             twelve_hours: '143',
             one_day: '167',
             one_week: '173',
-            largest_period: '255', // Max validity
-            largest: '255', // Alias for largest_period based on log
+            largest_period: '255',
+            largest: '255',
           };
           newSmsParams.sms_para_validity_period =
             validityMap[req.body.save_time.toLowerCase()] ||
             newSmsParams.sms_para_validity_period;
         }
         if (req.body.status_save !== undefined) {
-          // "0" or "1"
           newSmsParams.sms_para_status_report = req.body.status_save;
         }
         if (req.body.save_location !== undefined) {
-          // "native" or "sim"
           newSmsParams.sms_para_mem_store =
             req.body.save_location === 'native' ? 'nv' : req.body.save_location;
         }
         mockData.setState('sms_parameter_info', newSmsParams);
         console.log('Updated SMS Parameters:', newSmsParams);
-        responseData.result = 'success'; // Or "0" if the device expects that
+        responseData.result = 'success';
         break;
       }
       case 'SET_MSG_READ': {
